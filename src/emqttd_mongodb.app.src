@@ -1,12 +1,15 @@
 {application, emqttd_mongodb,
- [
-  {description, ""},
-  {vsn, "1"},
-  {registered, []},
-  {applications, [
-                  kernel,
-                  stdlib
-                 ]},
-  {mod, { emqttd_mongodb_app, []}},
-  {env, []}
- ]}.
+  [
+    {description, ""},
+    {vsn, "1"},
+    {registered, []},
+    {applications, [
+      kernel,
+      stdlib,
+      bson,
+      crypto,
+      mongodb
+    ]},
+    {mod, {emqttd_mongodb_app, []}},
+    {env, []}
+  ]}.
