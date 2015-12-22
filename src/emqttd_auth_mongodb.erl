@@ -52,9 +52,6 @@ check(#mqtt_client{username = Username}, Password,
   end.
 
 query(Database, Collection, Username) ->
-  application:start(bson),
-  application:start(crypto),
-  application:start(mongodb),
   {ok, Connection} = mongo:connect([{database, Database}]),
   Cursor = mongo:find(Connection, Collection, {<<"username">>, Username}),
   Result = mc_cursor:rest(Cursor),
