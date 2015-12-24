@@ -101,6 +101,8 @@ type(Topic) ->
 	end.
 
 %% 获取当前时间秒数
-timestamp() -> erlang:now() / 1000.  
+timestamp() -> 
+  {M, S, _} = os:timestamp(),
+  M * 1000000 + S.  
   
   
