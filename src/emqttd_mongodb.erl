@@ -25,18 +25,8 @@ on_message_publish(Message, _Env) ->
 %% Called when the plugin application stop
 onunload() ->
   emqttd_broker:unhook('message.publish', {?MODULE, on_message_publish}).
-
-%%    msgid           :: mqtt_msgid(),      %% Global unique message ID
-%%    pktid           :: mqtt_pktid(),      %% PacketId
-%%    topic           :: binary(),          %% Topic that the message is published to
-%%    from            :: binary() | atom(), %% ClientId of publisher
-%%    qos    = 0      :: 0 | 1 | 2,         %% Message QoS
-%%    retain = false  :: boolean(),         %% Retain flag
-%%    dup    = false  :: boolean(),         %% Dup flag
-%%    sys    = false  :: boolean(),         %% $SYS flag
-%%    payload         :: binary(),          %% Payload
-%%    timestamp       :: erlang:timestamp() %% os:timestamp
-store(#mqtt_message{msgid = MsgId, pktid = PktId, from = From, topic = Topic, payload = Payload, timestamp = Timestamp}) ->
+  
+store(#mqtt_message{msgid = MsgId, pktid = PktId, topic = Topic, from = From, payload = Payload, timestamp = Timestamp}) ->
 %%[{_, Body}, {_, Direction}, {_, From}, {_, Nickname}, {_, SubType}, {_, Time}, {_, To}, {_, Topic}, {_, Type}] = jsx:decode(Payload),
   [{_, Body}, {_, Direction}, {_, Nickname}, {_, SubType}, {_, Time}, {_, To}, {_, Type}] = jsx:decode(Payload),
   %% 聊天记录存储
@@ -62,12 +52,15 @@ store(#mqtt_message{msgid = MsgId, pktid = PktId, from = From, topic = Topic, pa
     <<"topic">> => Topic,
     <<"type">> => Type
   },
-  {ok, Connection} = mongo:connect([{database, <<"db0">>}]),
-  mongo:insert(Connection, <<"Message">>, [Msg1, Msg2]).
+  Database = <<"db0">>,
+  {ok, DBConnection} = mongo:connect([{database, Database}]),
+  mongo:insert(DBConnection, <<"Message">>, [Msg1, Msg2]).
   %% 聊天记录存储
   
   %% 聊天列表记录存储
+  Collection = <<"TopicHistory">>,
   UserId = list_to_integer(From),
+  Id = Topic,
   Map1 = #{
     <<"type">> 		=> type(Topic),	%% 消息类型
     <<"userId">> 	=> UserId,		%% 消息发送者
@@ -77,7 +70,19 @@ store(#mqtt_message{msgid = MsgId, pktid = PktId, from = From, topic = Topic, pa
     <<"time">> 		=> timestamp(),	%% 聊天记录最后一条消息发送时间
     <<"count">> 	=> 0			%% 未读消息数
   },
-  
+  case mongo:count(DBConnection, Collection, {<<"_id">>, UserId}) of
+    0 ->
+      mongo:insert(DBConnection, Collection, #{<<"_id">> => UserId, <<"topics">> => [Map1]});
+    _ ->
+	  case mongo:count(DBConnection, Collection, {<<"_id">>, UserId, <<"topics.id">>, Id}) of
+		0 -> 
+		Q = #{<<"_id">> => UserId},
+	  	Ops = #{<<"$addToSet">> => #{<<"topics">> =>  #{<<"$each">> => [Map1]}}},
+	  	mongo:update(DBConnection, Collection, Q, Ops);
+		_ -> "exists,skip"
+      end
+  end,
+  mongo:disconnect(DBConnection).  
   %% 聊天列表记录存储
   
 %% 获取用户Id

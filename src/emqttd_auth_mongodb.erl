@@ -56,6 +56,7 @@ query(Database, Collection, Username) ->
   Cursor = mongo:find(Connection, Collection, {<<"username">>, Username}),
   Result = mc_cursor:rest(Cursor),
   mc_cursor:close(Cursor),
+  mongo:disconnect(Connection),
   {ok, Result}.
 
 check_pass({ok, PassHash}, Password, HashType) ->
