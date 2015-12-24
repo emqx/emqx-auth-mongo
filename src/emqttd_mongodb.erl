@@ -26,47 +26,46 @@ on_message_publish(Message, _Env) ->
 onunload() ->
   emqttd_broker:unhook('message.publish', {?MODULE, on_message_publish}).
   
-store(#mqtt_message{msgid = MsgId, pktid = PktId, topic = Topic, from = From, payload = Payload, timestamp = Timestamp}) ->
-%%[{_, Body}, {_, Direction}, {_, From}, {_, Nickname}, {_, SubType}, {_, Time}, {_, To}, {_, Topic}, {_, Type}] = jsx:decode(Payload),
-  [{_, Body}, {_, Direction}, {_, Nickname}, {_, SubType}, {_, Time}, {_, To}, {_, Type}] = jsx:decode(Payload),
+store(#mqtt_message{msgid = MsgId, pktid = PktId, topic = Topic, from = From, payload = Payload}) ->
+  [{_, Body1}, {_, Direction1}, {_, From1}, {_, Nickname1}, {_, SubType1}, {_, Time1}, {_, To1}, {_, Topic1}, {_, Type1}] = jsx:decode(Payload),
   %% 聊天记录存储
   Msg1 = #{
-    <<"body">> => Body,
-    <<"direction">> => Direction,
-    <<"from">> => From,
-    <<"nickname">> => Nickname,
-    <<"subType">> => SubType,
-    <<"time">> => Time,
-    <<"to">> => To,
-    <<"topic">> => Topic,
-    <<"type">> => Type
+    <<"body">> => Body1,
+    <<"direction">> => Direction1,
+    <<"from">> => From1,
+    <<"nickname">> => Nickname1,
+    <<"subType">> => SubType1,
+    <<"time">> => Time1,
+    <<"to">> => To1,
+    <<"topic">> => Topic1,
+    <<"type">> => Type1
   },
   Msg2 = #{
-    <<"body">> => Body,
+    <<"body">> => Body1,
     <<"direction">> => 1,
-    <<"from">> => To,
-    <<"nickname">> => Nickname,
-    <<"subType">> => SubType,
-    <<"time">> => Time,
-    <<"to">> => From,
-    <<"topic">> => Topic,
-    <<"type">> => Type
+    <<"from">> => To1,
+    <<"nickname">> => Nickname1,
+    <<"subType">> => SubType1,
+    <<"time">> => Time1,
+    <<"to">> => From1,
+    <<"topic">> => Topic1,
+    <<"type">> => Type1
   },
   Database = <<"db0">>,
   {ok, DBConnection} = mongo:connect([{database, Database}]),
-  mongo:insert(DBConnection, <<"Message">>, [Msg1, Msg2]).
+  mongo:insert(DBConnection, <<"Message">>, [Msg1, Msg2]),
   %% 聊天记录存储
   
   %% 聊天列表记录存储
   Collection = <<"TopicHistory">>,
-  UserId = list_to_integer(From),
-  Id = Topic,
+  UserId = From1,
+  Id = Topic1,
   Map1 = #{
-    <<"type">> 		=> type(Topic),	%% 消息类型
+    <<"type">> 		=> type(binary_to_list(Topic1)),	%% 消息类型
     <<"userId">> 	=> UserId,		%% 消息发送者
-    <<"id">> 		=> Topic,		%% 主题
-    <<"name">> 		=> Nickname,	%% 聊天记录名字
-    <<"desc">> 		=> Body,		%% 聊天记录最后一条消息
+    <<"id">> 		=> Topic1,		%% 主题
+    <<"name">> 		=> Nickname1,	%% 聊天记录名字
+    <<"desc">> 		=> Body1,		%% 聊天记录最后一条消息
     <<"time">> 		=> timestamp(),	%% 聊天记录最后一条消息发送时间
     <<"count">> 	=> 0			%% 未读消息数
   },
@@ -82,8 +81,9 @@ store(#mqtt_message{msgid = MsgId, pktid = PktId, topic = Topic, from = From, pa
 		_ -> "exists,skip"
       end
   end,
-  mongo:disconnect(DBConnection).  
   %% 聊天列表记录存储
+  
+  mongo:disconnect(DBConnection).
   
 %% 获取用户Id
 id(Topic) ->

@@ -16,7 +16,7 @@ start(_StartType, _StartArgs) ->
   application:start(bson),
   application:start(crypto),
   application:start(mongodb),
-  ok = emqttd_access_control:register_mod(auth, emqttd_auth_mongodb, {<<"db0">>, <<"mqtt_user">>, sha256}),
+  ok = emqttd_access_control:register_mod(auth, emqttd_auth_mongodb, {<<"db0">>, <<"UserAccount">>, sha256}),
   Env = application:get_all_env(),
   emqttd_mongodb:onload(Env),
   emqttd_mongodb_sup:start_link().
