@@ -10,9 +10,19 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    Env = application:get_all_env(),
-    emqttd_mongodb:onload(Env),
-    emqttd_mongodb_sup:start_link().
+%% 	{ok, Database}  = application:get_env(?MODULE, database),
+%% 	{ok, Collection}  = application:get_env(?MODULE, collection),
+%% 	{ok, HashType} = application:get_env(?MODULE, password_hash),
+  application:start(bson),
+  application:start(crypto),
+  application:start(mongodb),
+  ok = emqttd_access_control:register_mod(auth, emqttd_auth_mongodb, {<<"db0">>, <<"UserAccount">>, sha256}),
+  Env = application:get_all_env(),
+  emqttd_mongodb:onload(Env),
+  emqttd_mongodb_sup:start_link().
 
 stop(_State) ->
-    emqttd_mongodb:onunload(), ok.
+  application:stop(mongodb),
+  application:stop(crypto),
+  application:stop(bson),
+  emqttd_mongodb:onunload(), ok.
