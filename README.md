@@ -1,8 +1,9 @@
+
 # emqtt_mongodb
 
 ## Overview
 
-emqttd Authentication with MongoDB
+emqttd MongoDB Authentication Plugin
 
 
 ## Configuration
@@ -36,6 +37,8 @@ File: etc/plugin.config
 ```
 
 ## Mongodb
+
+### database
 
 ```sql
 use db0
