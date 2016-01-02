@@ -70,7 +70,7 @@ git submodule update --remote
 Orelse:
 
 ```
-git submodule add https://github.com/emqtt/emqtt_mongodb.git plugins/emqtt_mongodb
+git submodule add https://github.com/emqtt/emqttd_mongodb.git plugins/emqttd_mongodb
 
 make && make dist
 ```
