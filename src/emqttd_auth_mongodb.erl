@@ -19,8 +19,9 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 %%% SOFTWARE.
 %%%-----------------------------------------------------------------------------
-%%% @doc Authentication with MySQL Database.
-%%%
+%%% @doc Authentication with MongoDB.
+%%% 
+%%% @author @lovecc0923
 %%% @author Feng Lee <feng@emqtt.io>
 %%%-----------------------------------------------------------------------------
 -module(emqttd_auth_mongodb).
@@ -31,33 +32,27 @@
 
 -export([init/1, check/3, description/0]).
 
--record(state, {database, collection, hash_type}).
-
+-record(state, {collection, hash_type}).
+ 
 -define(EMPTY(Username), (Username =:= undefined orelse Username =:= <<>>)).
 
-init({Database, Collection, HashType}) ->
-  {ok, #state{database = Database, collection = Collection, hash_type = HashType}}.
+init({Collection, HashType}) ->
+  {ok, #state{collection = Collection, hash_type = HashType}}.
 
 check(#mqtt_client{username = Username}, Password, _State)
   when ?EMPTY(Username) orelse ?EMPTY(Password) ->
   {error, undefined};
 
 check(#mqtt_client{username = Username}, Password,
-    #state{database = Database, collection = Collection, hash_type = HashType}) ->
-  case query(Database, Collection, Username) of
-    {ok, [Record]} ->
-      check_pass(maps:find(<<"password">>, Record), Password, HashType);
-    {ok, []} ->
-      {error, notfound}
-  end.
-
-query(Database, Collection, Username) ->
-  {ok, Connection} = mongo:connect([{database, Database}]),
-  Cursor = mongo:find(Connection, Collection, {<<"username">>, Username}),
-  Result = mc_cursor:rest(Cursor),
-  mc_cursor:close(Cursor),
-  mongo:disconnect(Connection),
-  {ok, Result}.
+    #state{collection = Collection, hash_type = HashType}) ->
+    case emqttd_mongodb_client:query(Collection, {<<"username">>, Username}) of
+        {ok, [Record]} ->
+          check_pass(maps:find(<<"password">>, Record), Password, HashType);
+        {ok, []} ->
+          {error, notfound};
+        {error, Error} ->
+            {error, Error}
+    end.
 
 check_pass({ok, PassHash}, Password, HashType) ->
   case PassHash =:= hash(HashType, Password) of

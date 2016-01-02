@@ -19,36 +19,22 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 %%% SOFTWARE.
 %%%-----------------------------------------------------------------------------
-%%% @doc MongoDB Plugin Supervisor
+%%% @doc MongoDB Pool Client
 %%% 
-%%% @author @lovecc0923
 %%% @author Feng Lee <feng@emqtt.io>
 %%%-----------------------------------------------------------------------------
 
--module(emqttd_mongodb_sup).
+-module(emqttd_mongodb_client).
 
--behaviour(supervisor).
+-export([query/2]).
 
-%% API
--export([start_link/0]).
+-define(POOL, mongodb_pool).
 
-%% Supervisor callbacks
--export([init/1]).
-
-%% ===================================================================
-%% API functions
-%% ===================================================================
-
-start_link() ->
-  supervisor:start_link({local, ?MODULE}, ?MODULE, []).
-
-%% ===================================================================
-%% Supervisor callbacks
-%% ===================================================================
-
-init([]) ->
-  {ok, Env} = application:get_env(emqttd_mongodb, mongodb_pool),
-  Pool = ecpool:spec(mongdb_pool, mongdb_pool, mongo, Env),
-  {ok, {{one_for_all, 5, 20}, [Pool]}}.
-
+query(Collection, Where) ->
+    ecpool:with_client(?POOL, fun(Conn) ->
+          Cursor = mongo:find(Conn, Collection, Where),
+          Result = mc_cursor:rest(Cursor),
+          mc_cursor:close(Cursor),
+          {ok, Result}
+        end).
 

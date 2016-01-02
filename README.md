@@ -4,21 +4,38 @@
 
 emqttd Authentication with MongoDB
 
-## 配置插件
+
+## Configuration
 
 File: etc/plugin.config
 
 ```erlang
 [
-  {emqttd_auth_mongodb, [
-	{database, "db0"},
-	{collection, "mqtt_user"},
-    {password_hash, sha256},
+  {emqttd_mongodb, [
+
+    {mongodb_pool, [
+      {pool_size, 4},
+      {pool_type, random},
+      {auto_reconnect, 3},
+
+      %% Mongodb driver opts
+      %% {login, ""},
+      %% {password,""},
+      {host, "localhost"},
+      {port, 27019},
+      {database, "db0"}
+    ]},
+
+    {user_collection, "mqtt_user"},
+
+    %% hash algorithm: plain, md5, sha, sha256, pbkdf2?
+    {password_hash, sha256}
+
   ]}
 ].
 ```
 
-## 根据插件配置参数创建MongoDB数据库和集合并为集合字段username创建索引
+## Mongodb
 
 ```sql
 use db0
@@ -26,7 +43,7 @@ db.createCollection("mqtt_user")
 db.mqtt_user.ensureIndex({"username":1})
 ```
 
-## mqtt_user集合结构
+#### mqtt_user collection
 
 ```sql
 {
@@ -59,3 +76,5 @@ make && make dist
 
 ```
 ./bin/emqttd_ctl plugins load emqttd_mongodb
+
+

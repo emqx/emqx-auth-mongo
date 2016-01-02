@@ -1,14 +1,16 @@
 {application, emqttd_mongodb,
   [
-    {description, ""},
-    {vsn, "1"},
+    {description, "emqttd mongodb authentication plugin"},
+    {vsn, "0.15"},
     {registered, []},
     {applications, [
       kernel,
       stdlib,
       bson,
       crypto,
-      mongodb
+      mongodb,
+      gproc,
+      ecpool
     ]},
     {mod, {emqttd_mongodb_app, []}},
     {env, []}
