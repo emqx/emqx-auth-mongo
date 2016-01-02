@@ -48,7 +48,7 @@ start_link() ->
 
 init([]) ->
   {ok, Env} = application:get_env(emqttd_mongodb, mongodb_pool),
-  Pool = ecpool:spec(mongdb_pool, mongdb_pool, mongo, Env),
+  Pool = ecpool:pool_spec(mongdb_pool, mongdb_pool, mongo, Env),
   {ok, {{one_for_all, 5, 20}, [Pool]}}.
 
 
