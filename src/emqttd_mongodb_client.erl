@@ -26,9 +26,20 @@
 
 -module(emqttd_mongodb_client).
 
--export([query/2]).
+-behaviour(ecpool_worker).
+
+-export([connect/1, query/2]).
 
 -define(POOL, mongodb_pool).
+
+connect(Opts) ->
+    mongo:connect(case lists:keyfind(database, 1, Opts) of
+            {database, DB} -> [{database, bin(DB)} | lists:keydelete(database, 1, Opts)];
+            fasle          -> Opts
+        end).
+
+bin(S) when is_list(S)   -> list_to_binary(S);
+bin(B) when is_binary(B) -> B.
 
 query(Collection, Where) ->
     ecpool:with_client(?POOL, fun(Conn) ->
