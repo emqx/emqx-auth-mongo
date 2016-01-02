@@ -46,7 +46,7 @@ start(_StartType, _StartArgs) ->
     {ok, Sup}.
 
 register_auth_mod() ->
-    UserColl = application:get_env(?APP, user_collection, <<"mqtt_user">>),
+    UserColl = list_to_binary(application:get_env(?APP, user_collection, "mqtt_user")),
     PassHash = application:get_env(?APP, password_hash, sha256),
     ok = emqttd_access_control:register_mod(auth, emqttd_auth_mongodb, {UserColl, PassHash}).
 

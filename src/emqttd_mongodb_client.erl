@@ -34,12 +34,9 @@
 
 connect(Opts) ->
     mongo:connect(case lists:keyfind(database, 1, Opts) of
-            {database, DB} -> [{database, bin(DB)} | lists:keydelete(database, 1, Opts)];
+            {database, DB} -> [{database, list_to_binary(DB)} | lists:keydelete(database, 1, Opts)];
             fasle          -> Opts
         end).
-
-bin(S) when is_list(S)   -> list_to_binary(S);
-bin(B) when is_binary(B) -> B.
 
 query(Collection, Where) ->
     ecpool:with_client(?POOL, fun(Conn) ->
