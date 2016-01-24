@@ -1,10 +1,7 @@
 
-# emqtt_mongodb
-
 ## Overview
 
-emqttd MongoDB Authentication Plugin
-
+MongoDB Authentication Plugin
 
 ## Configuration
 
@@ -12,18 +9,18 @@ File: etc/plugin.config
 
 ```erlang
 [
-  {emqttd_mongodb, [
+  {emqttd_plugin_mongo, [
 
-    {mongodb_pool, [
-      {pool_size, 4},
-      {pool_type, random},
+    {mongo_pool, [
+      {pool_size, 8},
+      {pool_type, round_robin},
       {auto_reconnect, 3},
 
       %% Mongodb driver opts
+      {host, "localhost"},
+      {port, 27017},
       %% {login, ""},
       %% {password,""},
-      {host, "localhost"},
-      {port, 27019},
       {database, "db0"}
     ]},
 
@@ -52,8 +49,6 @@ db.mqtt_user.ensureIndex({"username":1})
 {
   "username" : "1000",
   "password" : "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
-  "sale" : 0,
-  "created" : 0
 }
 ```
 
@@ -70,7 +65,7 @@ git submodule update --remote
 Orelse:
 
 ```
-git submodule add https://github.com/emqtt/emqttd_mongodb.git plugins/emqttd_mongodb
+git submodule add https://github.com/emqtt/emqttd_plugin_mongo.git plugins/emqttd_plugin_mongo
 
 make && make dist
 ```
@@ -78,6 +73,6 @@ make && make dist
 ## Load Plugin
 
 ```
-./bin/emqttd_ctl plugins load emqttd_mongodb
-
+./bin/emqttd_ctl plugins load emqttd_plugin_mongo
+```
 

@@ -1,0 +1,17 @@
+{application, emqttd_plugin_mongo,
+ [
+  {description, "Authentication with MongoDB"},
+  {vsn, "0.15"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  bson,
+                  crypto,
+                  mongodb,
+                  gproc,
+                  ecpool
+                 ]},
+  {mod, { emqttd_plugin_mongo_app, []}},
+  {env, []}
+ ]}.

@@ -19,30 +19,37 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 %%% SOFTWARE.
 %%%-----------------------------------------------------------------------------
-%%% @doc MongoDB Pool Client
+%%% @doc MongoDB Plugin Application
 %%% 
+%%% @author @lovecc0923
 %%% @author Feng Lee <feng@emqtt.io>
 %%%-----------------------------------------------------------------------------
 
--module(emqttd_mongodb_client).
+-module(emqttd_plugin_mongo_app).
 
--behaviour(ecpool_worker).
+-behaviour(application).
 
--export([connect/1, query/2]).
+%% Application callbacks
+-export([start/2, stop/1]).
 
--define(POOL, mongodb_pool).
+-define(APP, emqttd_plugin_mongo).
 
-connect(Opts) ->
-    mongo:connect(case lists:keyfind(database, 1, Opts) of
-            {database, DB} -> [{database, list_to_binary(DB)} | lists:keydelete(database, 1, Opts)];
-            fasle          -> Opts
-        end).
+%% ===================================================================
+%% Application callbacks
+%% ===================================================================
 
-query(Collection, Where) ->
-    ecpool:with_client(?POOL, fun(Conn) ->
-          Cursor = mongo:find(Conn, Collection, Where),
-          Result = mc_cursor:rest(Cursor),
-          mc_cursor:close(Cursor),
-          {ok, Result}
-        end).
+start(_StartType, _StartArgs) ->
+    application:ensure_all_started(mongodb),
+    application:ensure_all_started(ecpool),
+    {ok, Sup} = emqttd_plugin_mongo_sup:start_link(),
+    register_auth_mod(),
+    {ok, Sup}.
+
+register_auth_mod() ->
+    UserColl = list_to_binary(application:get_env(?APP, user_collection, "mqtt_user")),
+    PassHash = application:get_env(?APP, password_hash, sha256),
+    ok = emqttd_access_control:register_mod(auth, emqttd_auth_mongo, {UserColl, PassHash}).
+
+stop(_State) ->
+    emqttd_access_control:unregister_mod(auth, emqttd_auth_mongo).
 

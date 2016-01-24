@@ -1,5 +1,5 @@
 %%%-----------------------------------------------------------------------------
-%%% Copyright (c) 2015-2016 eMQTT.IO, All Rights Reserved.
+%%% Copyright (c) 2012-2016 eMQTT.IO, All Rights Reserved.
 %%%
 %%% Permission is hereby granted, free of charge, to any person obtaining a copy
 %%% of this software and associated documentation files (the "Software"), to deal
@@ -19,37 +19,52 @@
 %%% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 %%% SOFTWARE.
 %%%-----------------------------------------------------------------------------
-%%% @doc MongoDB Plugin Application
+%%% @doc Authentication with MongoDB.
 %%% 
 %%% @author @lovecc0923
 %%% @author Feng Lee <feng@emqtt.io>
 %%%-----------------------------------------------------------------------------
+-module(emqttd_auth_mongodb).
 
--module(emqttd_mongodb_app).
+-behaviour(emqttd_auth_mod).
 
--behaviour(application).
+-include("../../../include/emqttd.hrl").
 
-%% Application callbacks
--export([start/2, stop/1]).
+-export([init/1, check/3, description/0]).
 
--define(APP, emqttd_mongodb).
+-record(state, {collection, hash_type}).
+ 
+-define(EMPTY(Username), (Username =:= undefined orelse Username =:= <<>>)).
 
-%% ===================================================================
-%% Application callbacks
-%% ===================================================================
+init({Collection, HashType}) ->
+  {ok, #state{collection = Collection, hash_type = HashType}}.
 
-start(_StartType, _StartArgs) ->
-    application:ensure_all_started(mongodb),
-    application:ensure_all_started(ecpool),
-    {ok, Sup} = emqttd_mongodb_sup:start_link(),
-    register_auth_mod(),
-    {ok, Sup}.
+check(#mqtt_client{username = Username}, Password, _State)
+  when ?EMPTY(Username) orelse ?EMPTY(Password) ->
+  {error, undefined};
 
-register_auth_mod() ->
-    UserColl = list_to_binary(application:get_env(?APP, user_collection, "mqtt_user")),
-    PassHash = application:get_env(?APP, password_hash, sha256),
-    ok = emqttd_access_control:register_mod(auth, emqttd_auth_mongodb, {UserColl, PassHash}).
+check(#mqtt_client{username = Username}, Password,
+    #state{collection = Collection, hash_type = HashType}) ->
+    case emqttd_mongo_client:query(Collection, {<<"username">>, Username}) of
+        {ok, [Record]} ->
+          check_pass(maps:find(<<"password">>, Record), Password, HashType);
+        {ok, []} ->
+          {error, notfound};
+        {error, Error} ->
+            {error, Error}
+    end.
 
-stop(_State) ->
-    emqttd_access_control:unregister_mod(auth, emqttd_auth_mongodb).
+check_pass({ok, PassHash}, Password, HashType) ->
+  case PassHash =:= hash(HashType, Password) of
+    true -> ok;
+    false -> {error, password_error}
+  end;
+
+check_pass(error, _Password, _HashType) ->
+    {error, not_found}.
+
+description() -> "Authentication with MongoDB".
+
+hash(Type, Password) ->
+    emqttd_auth_mod:passwd_hash(Type, Password).
 
