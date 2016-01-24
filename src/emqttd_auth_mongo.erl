@@ -24,7 +24,7 @@
 %%% @author @lovecc0923
 %%% @author Feng Lee <feng@emqtt.io>
 %%%-----------------------------------------------------------------------------
--module(emqttd_auth_mongodb).
+-module(emqttd_auth_mongo).
 
 -behaviour(emqttd_auth_mod).
 
