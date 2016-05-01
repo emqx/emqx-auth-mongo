@@ -10,3 +10,7 @@ rel/example_project
 .rebar
 .erlang.mk/
 emqttd_auth_mongo.d
+ct.coverdata
+logs/
+test/ct.cover.spec
+
