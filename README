@@ -1,15 +1,17 @@
 
-## Overview
+emqttd_auth_mongo
+=================
 
 MongoDB Authentication Plugin
 
-## Configuration
+Configuration
+-------------
 
 File: etc/plugin.config
 
 ```erlang
 [
-  {emqttd_plugin_mongo, [
+  {emqttd_auth_mongo, [
 
     {mongo_pool, [
       {pool_size, 8},
@@ -33,7 +35,8 @@ File: etc/plugin.config
 ].
 ```
 
-## Mongodb
+Mongodb
+-------------
 
 ### database
 
@@ -52,25 +55,16 @@ db.mqtt_user.ensureIndex({"username":1})
 }
 ```
 
-## Build Plugin
+Build Plugin
+-------------
 
-This project is a plugin for emqttd broker. In emqttd project:
+This project is a plugin for emqttd broker.
 
-If the submodule exists:
+make & make ct
 
-```
-git submodule update --remote
-```
 
-Orelse:
-
-```
-git submodule add https://github.com/emqtt/emqttd_plugin_mongo.git plugins/emqttd_plugin_mongo
-
-make && make dist
-```
-
-## Load Plugin
+Load Plugin
+---------------
 
 ```
 ./bin/emqttd_ctl plugins load emqttd_plugin_mongo
