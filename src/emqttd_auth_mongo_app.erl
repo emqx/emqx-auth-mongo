@@ -18,7 +18,7 @@
 %%
 %% @author @lovecc0923
 %% @author Feng Lee <feng@emqtt.io>
--module(emqttd_plugin_mongo_app).
+-module(emqttd_auth_mongo_app).
 
 -behaviour(application).
 
