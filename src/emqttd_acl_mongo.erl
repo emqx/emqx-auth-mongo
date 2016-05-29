@@ -14,27 +14,27 @@
 %% limitations under the License.
 %%--------------------------------------------------------------------
 
-%% @doc MongoDB Pool Client
-%% @author Feng Lee <feng@emqtt.io>
--module(emqttd_mongo_client).
+%% @doc ACL with MongoDB.
+-module(emqttd_acl_mongo).
 
--behaviour(ecpool_worker).
+-behaviour(emqttd_acl_mod).
 
--export([connect/1, query/2]).
+-include("../../../include/emqttd.hrl").
 
--define(POOL, mongo_pool).
+%% ACL callbacks
+-export([init/1, check_acl/2, reload_acl/1, description/0]).
 
-connect(Opts) ->
-    mongo:connect(case lists:keyfind(database, 1, Opts) of
-            {database, DB} -> [{database, iolist_to_binary(DB)} | lists:keydelete(database, 1, Opts)];
-            fasle          -> Opts
-        end).
+-record(state, {acl_nomatch}).
 
-query(Collection, Where) ->
-    ecpool:with_client(?POOL, fun(Conn) ->
-          Cursor = mongo:find(Conn, Collection, Where),
-          Result = mc_cursor:rest(Cursor),
-          mc_cursor:close(Cursor),
-          {ok, Result}
-        end).
+init(_Args) ->
+    {ok, #state{}}.
+
+check_acl({Client, PubSub, Topic}, State = #state{acl_nomatch = Default}) ->
+    Default.
+
+reload_acl(_State) ->
+    ok.
+
+description() ->
+    "MongoDB ACL Module".
 
