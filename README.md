@@ -102,6 +102,12 @@ mqtt_user Collection
 }
 ```
 
+For example:
+```
+db.mqtt_user.insert({username: "test", password: "password hash", is_superuser: false})
+db.mqtt_user:insert({username: "root", is_superuser: true})
+```
+
 mqtt_acl Collection
 -------------------
 
@@ -113,6 +119,12 @@ mqtt_acl Collection
     subscribe: ["subtop1", "subtop2", ...],
     pubsub: ["topic/#", "topic1", ...]
 }
+```
+
+For example:
+```
+db.mqtt_acl.insert({username: "test", publish: ["t/1", "t/2"], subscribe: ["user/%u", "client/%c"]})
+db.mqtt_acl.insert({username: "admin", pubsub: ["#"]})
 ```
 
 License
