@@ -79,9 +79,8 @@ is_superuser(#superquery{collection = Coll, field = Field, selector = Selector},
     Row = query(Coll, replvar(Selector, Client)),
     io:format("SuperRow: ~p~n", [Row]),
     case maps:get(Field, Row, false) of
-        1    -> true;
-        true -> true;
-        _    -> false
+        true   -> true;
+        _False -> false
     end.
 
 replvar({Field, <<"%u">>}, #mqtt_client{username = Username}) ->
