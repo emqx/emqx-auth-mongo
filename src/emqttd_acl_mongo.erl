@@ -45,7 +45,7 @@ check_acl({Client, PubSub, Topic}, #state{superquery = SuperQuery,
                      matched -> allow;
                      nomatch -> Default
                  end;
-        true  -> Default
+        true  -> allow
     end.
 
 match(_Client, _Topic, []) ->
