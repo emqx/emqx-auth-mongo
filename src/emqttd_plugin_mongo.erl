@@ -25,8 +25,6 @@
 
 -include("../../../include/emqttd.hrl").
 
--behaviour(ecpool_worker).
-
 -import(proplists, [get_value/3]).
 
 -export([config/1, is_superuser/2, replvar/2, connect/1, query/2]).
@@ -77,8 +75,7 @@ binary_selector({Field, Val}) ->
 -spec(is_superuser(undefined | list(), mqtt_client()) -> boolean()).
 is_superuser(undefined, _MqttClient) ->
     false;
-is_superuser(#superquery{collection = Coll, field = Field, selector = Selector},
-             Client = #mqtt_client{username = Username}) ->
+is_superuser(#superquery{collection = Coll, field = Field, selector = Selector}, Client) ->
     Row = query(Coll, replvar(Selector, Client)),
     case maps:get(Field, Row, false) of
         1    -> true;
