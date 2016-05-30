@@ -40,7 +40,6 @@ check_acl({Client, PubSub, Topic}, #state{superquery = SuperQuery,
     case emqttd_plugin_mongo:is_superuser(SuperQuery, Client) of
         false -> #aclquery{collection = Coll, selector = Selector} = AclQuery,
                  Row = emqttd_plugin_mongo:query(Coll, emqttd_plugin_mongo:replvar(Selector, Client)),
-                 io:format("AclRow: ~p~n", [Row]),
                  case match(Client, Topic, topics(PubSub, Row)) of
                      matched -> allow;
                      nomatch -> Default
