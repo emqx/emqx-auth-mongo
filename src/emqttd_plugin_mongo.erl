@@ -95,10 +95,10 @@ replvar(Selector, _Client) ->
 %%--------------------------------------------------------------------
 
 connect(Opts) ->
-    mc_worker_api:connect(fixopt(Opts)).
+    mc_worker_api:connect(fixopt(Opts, [])).
 
-fixopt(Opts) ->
-    fixopt(Opts, []).
+fixopt([], Acc) ->
+    Acc;
 
 fixopt([{login, Login} | Opts], Acc) when is_list(Login) ->
     fixopt(Opts, [{login, list_to_binary(Login)} | Acc]);
