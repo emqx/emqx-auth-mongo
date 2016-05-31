@@ -14,16 +14,14 @@
 %% limitations under the License.
 %%--------------------------------------------------------------------
 
-%% @doc MongoDB Plugin Application
-%%
-%% @author @lovecc0923
-%% @author Feng Lee <feng@emqtt.io>
 -module(emqttd_plugin_mongo_app).
+
+-author("Feng Lee<feng@emqtt.io").
 
 -behaviour(application).
 
 %% Application callbacks
--export([start/2, stop/1]).
+-export([start/2, prep_stop/1, stop/1]).
 
 -define(APP, emqttd_plugin_mongo).
 
@@ -33,16 +31,27 @@
 
 start(_StartType, _StartArgs) ->
     application:ensure_all_started(mongodb),
-    application:ensure_all_started(ecpool),
     {ok, Sup} = emqttd_plugin_mongo_sup:start_link(),
     register_auth_mod(),
     {ok, Sup}.
 
 register_auth_mod() ->
-    UserColl = list_to_binary(application:get_env(?APP, user_collection, "mqtt_user")),
-    PassHash = application:get_env(?APP, password_hash, sha256),
-    ok = emqttd_access_control:register_mod(auth, emqttd_auth_mongo, {UserColl, PassHash}).
+    SuperQuery = ?APP:config(superquery), AuthQuery = ?APP:config(authquery),
+    AclQuery = ?APP:config(aclquery), AclNomatch = ?APP:config(acl_nomatch),
+    ok = emqttd_access_control:register_mod(auth, emqttd_auth_mongo, {SuperQuery, AuthQuery}),
+    if
+        AclQuery == undefined ->
+            ok;
+        true ->
+            AclEnv = {SuperQuery, AclQuery, AclNomatch},
+            emqttd_access_control:register_mod(acl, emqttd_acl_mongo, AclEnv)
+    end.
+
+prep_stop(State) ->
+    emqttd_access_control:unregister_mod(acl, emqttd_acl_mongo),
+    emqttd_access_control:unregister_mod(auth, emqttd_auth_mongo),
+    State.
 
 stop(_State) ->
-    emqttd_access_control:unregister_mod(auth, emqttd_auth_mongo).
+    ok.
 

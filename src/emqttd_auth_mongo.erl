@@ -15,49 +15,55 @@
 %%--------------------------------------------------------------------
 
 %% @doc Authentication with MongoDB.
-%% @author @lovecc0923
-%% @author Feng Lee <feng@emqtt.io>
 -module(emqttd_auth_mongo).
 
+-author("Feng Lee<feng@emqtt.io").
+
 -behaviour(emqttd_auth_mod).
+
+-include("emqttd_plugin_mongo.hrl").
 
 -include("../../../include/emqttd.hrl").
 
 -export([init/1, check/3, description/0]).
 
--record(state, {collection, hash_type}).
+-record(state, {superquery, authquery}).
  
 -define(EMPTY(Username), (Username =:= undefined orelse Username =:= <<>>)).
 
-init({Collection, HashType}) ->
-  {ok, #state{collection = Collection, hash_type = HashType}}.
+init({SuperQuery, AuthQuery}) ->
+  {ok, #state{superquery = SuperQuery, authquery = AuthQuery}}.
 
-check(#mqtt_client{username = Username}, Password, _State)
-  when ?EMPTY(Username) orelse ?EMPTY(Password) ->
-  {error, undefined};
+check(#mqtt_client{username = Username}, _Password, _State) when ?EMPTY(Username) ->
+    {error, username_undefined};
 
-check(#mqtt_client{username = Username}, Password,
-    #state{collection = Collection, hash_type = HashType}) ->
-    case emqttd_mongo_client:query(Collection, {<<"username">>, Username}) of
-        {ok, [Record]} ->
-          check_pass(maps:find(<<"password">>, Record), Password, HashType);
-        {ok, []} ->
-          {error, notfound};
-        {error, Error} ->
-            {error, Error}
+check(Client, Password, #state{superquery = SuperQuery}) when ?EMPTY(Password) ->
+    case emqttd_plugin_mongo:is_superuser(SuperQuery, Client) of
+        true  -> ok;
+        false -> {error, password_undefined}
+    end;
+
+check(Client, Password, #state{superquery = SuperQuery,authquery = AuthQuery}) ->
+    #authquery{collection = Collection, field = Field,
+               hash = HashType, selector = Selector} = AuthQuery,
+    case emqttd_plugin_mongo:is_superuser(SuperQuery, Client) of
+        false -> Selector1 = emqttd_plugin_mongo:replvar(Selector, Client),
+                 UserMap   = emqttd_plugin_mongo:query(Collection, Selector1),
+                 case maps:get(Field, UserMap, undefined) of
+                     undefined -> {error, notfound};
+                     PassHash  -> check_pass(PassHash, Password, HashType)
+                 end;
+        true  -> ok
     end.
 
-check_pass({ok, PassHash}, Password, HashType) ->
-  case PassHash =:= hash(HashType, Password) of
-    true -> ok;
-    false -> {error, password_error}
-  end;
-
-check_pass(error, _Password, _HashType) ->
-    {error, not_found}.
-
-description() -> "Authentication with MongoDB".
+check_pass(PassHash, Password, HashType) ->
+    case PassHash =:= hash(HashType, Password) of
+        true  -> ok;
+        false -> {error, password_error}
+    end.
 
 hash(Type, Password) ->
     emqttd_auth_mod:passwd_hash(Type, Password).
+
+description() -> "Authentication with MongoDB".
 
