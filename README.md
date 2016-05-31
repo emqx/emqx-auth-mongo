@@ -73,8 +73,8 @@ File: etc/plugin.config
 ].
 ```
 
-Load Plugin
------------
+Load the Plugin
+---------------
 
 ```
 ./bin/emqttd_ctl plugins load emqttd_plugin_mongo
@@ -135,5 +135,5 @@ Apache License Version 2.0
 Author
 ------
 
-feng at emqtt.io
+Feng Lee <feng@emqtt.io>
 
