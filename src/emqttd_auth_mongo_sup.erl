@@ -15,10 +15,9 @@
 %%--------------------------------------------------------------------
 
 %% @doc MongoDB Plugin Supervisor
-%% 
-%% @author @lovecc0923
-%% @author Feng Lee <feng@emqtt.io>
--module(emqttd_plugin_mongo_sup).
+-module(emqttd_auth_mongo_sup).
+
+-author("Feng Lee<feng@emqtt.io>").
 
 -behaviour(supervisor).
 
@@ -28,11 +27,13 @@
 %% Supervisor callbacks
 -export([init/1]).
 
+-define(APP, emqttd_auth_mongo).
+
 start_link() ->
   supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 init([]) ->
-  {ok, Env} = application:get_env(emqttd_plugin_mongo, mongo_pool),
-  Pool = ecpool:pool_spec(mongo_pool, mongo_pool, emqttd_mongo_client, Env),
-  {ok, {{one_for_all, 10, 100}, [Pool]}}.
+  {ok, Env} = application:get_env(?APP, mongo_pool),
+  PoolSpec = ecpool:pool_spec(?APP, ?APP, ?APP, Env),
+  {ok, {{one_for_all, 10, 100}, [PoolSpec]}}.
 

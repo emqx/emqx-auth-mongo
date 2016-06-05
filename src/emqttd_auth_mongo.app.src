@@ -1,6 +1,6 @@
 {application, emqttd_auth_mongo,
  [
-  {description, "Authentication against MongoDB"},
+  {description, "Authentication with MongoDB"},
   {vsn, "1.1"},
   {modules, []},
   {registered, []},
