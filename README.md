@@ -6,6 +6,18 @@ Authentication with MongoDB
 
 Build
 -----
+#### 1. Get Erlang driver for Mongodb
+
+We need to pull the [driver](https://github.com/comtihon/mongodb-erlang) into directory `emqttd/deps` 
+
+```shell
+$ cd emqttd/deps
+$ git clone git://github.com/comtihon/mongodb-erlang.git mongodb
+$ cd mongodb
+$ make
+```
+
+#### 2. Build the plugin
 
 This project is a plugin for emqttd broker. In emqttd project:
 
@@ -15,7 +27,7 @@ If the submodule exists:
 git submodule update --remote plugins/emqttd_plugin_mongo
 ```
 
-Orelse:
+Or else:
 
 ```
 git submodule add https://github.com/emqtt/emqttd_plugin_mongo.git plugins/emqttd_plugin_mongo
