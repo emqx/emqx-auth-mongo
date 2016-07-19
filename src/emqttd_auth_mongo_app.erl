@@ -31,6 +31,7 @@
 
 start(_StartType, _StartArgs) ->
     application:ensure_all_started(mongodb),
+    gen_conf:init(?APP),
     {ok, Sup} = emqttd_auth_mongo_sup:start_link(),
     register_auth_mod(),
     {ok, Sup}.

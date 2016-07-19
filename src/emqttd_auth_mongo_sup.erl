@@ -33,7 +33,7 @@ start_link() ->
   supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 init([]) ->
-  {ok, Env} = application:get_env(?APP, mongo_pool),
-  PoolSpec = ecpool:pool_spec(?APP, ?APP, ?APP, Env),
-  {ok, {{one_for_all, 10, 100}, [PoolSpec]}}.
+    {ok, Env} = gen_conf:value(?APP, mongo_pool),
+    PoolSpec = ecpool:pool_spec(?APP, ?APP, ?APP, Env),
+    {ok, {{one_for_all, 10, 100}, [PoolSpec]}}.
 

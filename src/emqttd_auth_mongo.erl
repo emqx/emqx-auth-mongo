@@ -68,7 +68,7 @@ config(Key) ->
     with_env(Key, fun(Env) -> Env end).
 
 with_env(Key, Fun) ->
-    case application:get_env(?APP, Key) of
+    case gen_conf:value(?APP, Key) of
         {ok, Env}   -> Fun(Env);
         undefined -> undefined
     end.
