@@ -17,13 +17,11 @@
 %% @doc Authentication with MongoDB.
 -module(emqttd_auth_mongo).
 
--author("Feng Lee<feng@emqtt.io").
-
 -behaviour(emqttd_auth_mod).
 
--include_lib("emqttd/include/emqttd.hrl").
-
 -include("emqttd_auth_mongo.hrl").
+
+-include_lib("emqttd/include/emqttd.hrl").
 
 -import(proplists, [get_value/3]).
 
@@ -36,8 +34,6 @@
 -record(state, {superquery, authquery}).
  
 -define(EMPTY(Username), (Username =:= undefined orelse Username =:= <<>>)).
-
--define(APP, ?MODULE).
 
 %%--------------------------------------------------------------------
 %% Config
@@ -160,5 +156,5 @@ fixopt([Opt | Opts], Acc) ->
     fixopt(Opts, [Opt | Acc]).
 
 query(Collection, Selector) ->
-    ecpool:with_client(?MODULE, fun(Conn) -> mc_worker_api:find_one(Conn, Collection, Selector) end).
+    ecpool:with_client(?APP, fun(Conn) -> mc_worker_api:find_one(Conn, Collection, Selector) end).
 

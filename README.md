@@ -7,58 +7,54 @@ Authentication with MongoDB
 Build the Plugin
 ----------------
 
-This project is a plugin for emqttd broker.
-
-make & make ct
+```
+make & make tests
+```
 
 Configuration
 -------------
 
-File: etc/plugins/emqttd_auth_mongo.config
+File: etc/emqttd_auth_mongo.conf
 
 ```erlang
-[
-  {emqttd_auth_mongo, [
+{mongo_pool, [
+  {pool_size, 8},
+  {auto_reconnect, 3},
 
-    {mongo_pool, [
-      {pool_size, 8},
-      {auto_reconnect, 3},
+  %% Mongodb Opts
+  {host, "localhost"},
+  {port, 27017},
+  %% {login, ""},
+  %% {password, ""},
+  {database, "mqtt"}
+]}.
 
-      %% Mongodb driver opts
-      {host, "localhost"},
-      {port, 27017},
-      %% {login, ""},
-      %% {password,""},
-      {database, "mqtt"}
-    ]},
+%% Variables: %u = username, %c = clientid
 
-    %% Superuser Query
-    {superquery, [
-        {collection, "mqtt_user"},
-        {super_field, "is_superuser"},
-        {selector, {"username", "%u"}}
-    ]},
+%% Superuser Query
+{superquery, pool, [
+  {collection, "mqtt_user"},
+  {super_field, "is_superuser"},
+  {selector, {"username", "%u"}}
+]}.
 
-    %% Authentication Query
-    {authquery, [
-        {collection, "mqtt_user"},
-        {password_field, "password"},
-        %% Hash Algorithm: plain, md5, sha, sha256, pbkdf2?
-        {password_hash, sha256},
-        {selector, {"username", "%u"}}
-    ]},
+%% Authentication Query
+{authquery, pool, [
+  {collection, "mqtt_user"},
+  {password_field, "password"},
+  %% Hash Algorithm: plain, md5, sha, sha256, pbkdf2?
+  {password_hash, sha256},
+  {selector, {"username", "%u"}}
+]}.
 
-    %% ACL Query: "%u" = username, "%c" = clientid
-    {aclquery, [
-        {collection, "mqtt_acl"},
-        {selector, {"username", "%u"}}
-    ]},
+%% ACL Query: "%u" = username, "%c" = clientid
+{aclquery, pool, [
+  {collection, "mqtt_acl"},
+  {selector, {"username", "%u"}}
+]}.
 
-    %% If no ACL rules matched, return...
-    {acl_nomatch, deny}
-
-  ]}
-].
+%% If no ACL rules matched, return...
+{acl_nomatch, deny}.
 ```
 
 Load the Plugin
