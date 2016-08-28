@@ -25,14 +25,19 @@
 -include("emqttd_auth_mongo.hrl").
 
 -define(INIT_ACL, [{<<"username">>, <<"testuser">>, <<"clientid">>, <<"null">>, <<"subscribe">>, [<<"#">>]},
-                   {<<"username">>, <<"dashboard">>, <<"clientid">>, <<"null">>, <<"pubsub">>, [<<"$SYS/#">>]}]).
+                   {<<"username">>, <<"dashboard">>, <<"clientid">>, <<"null">>, <<"pubsub">>, [<<"$SYS/#">>]},
+                   {<<"username">>, <<"user3">>, <<"clientid">>, <<"null">>, <<"publish">>, [<<"a/b/c">>]}]).
+
+-define(INIT_AUTH, [{<<"username">>, <<"test">>, <<"password">>, <<"testpwd">>, <<"is_superuser">>, false},
+                    {<<"username">>, <<"root">>,  <<"is_superuser">>, true}]).
 
 all() -> 
     [{group, emqttd_auth_mongo}].
 
 groups() -> 
     [{emqttd_auth_mongo, [sequence],
-     [check_acl]}].
+     [check_acl,
+      check_auth]}].
 
 init_per_suite(Config) ->
     DataDir = proplists:get_value(data_dir, Config),
@@ -58,19 +63,35 @@ check_acl(Config) ->
     mc_worker_api:insert(Connection, Collection, ?INIT_ACL),
     User1 = #mqtt_client{client_id = <<"client1">>, username = <<"testuser">>},
     User2 = #mqtt_client{client_id = <<"client2">>, username = <<"dashboard">>},
-    2 = mc_worker_api:count(Connection, Collection, {}),
+    User3 = #mqtt_client{client_id = <<"client2">>, username = <<"user3">>},
+    User4 = #mqtt_client{client_id = <<"$$client2">>, username = <<"$$user3">>},
+    3 = mc_worker_api:count(Connection, Collection, {}),
     %% ct log output
     %%ct_log(Connection, Collection, User1),
     allow = emqttd_access_control:check_acl(User1, subscribe, <<"users/testuser/1">>),
     deny = emqttd_access_control:check_acl(User1, subscribe, <<"$SYS/testuser/1">>),
     deny = emqttd_access_control:check_acl(User2, subscribe, <<"a/b/c">>),
     allow = emqttd_access_control:check_acl(User2, subscribe, <<"$SYS/testuser/1">>),
+    allow = emqttd_access_control:check_acl(User3, publish, <<"a/b/c">>),
+    deny= emqttd_access_control:check_acl(User3, publish, <<"c">>),
+    allow = emqttd_access_control:check_acl(User4, publish, <<"a/b/c">>),
     mc_worker_api:delete(Connection, Collection, {}).
 
-check_auth(_) ->
-    User1 = #mqtt_client{client_id = <<"client1">>, username = <<"testuser1">>},
-    ok = emqttd_access_control:auth(User1, <<"pass1">>),
-    {error, _} = emqttd_access_control:auth(User1, <<"pass">>).
+check_auth(Config) ->
+    Connection = proplists:get_value(connection, Config),
+    Collection = collection(authquery),
+    mc_worker_api:delete(Connection, Collection, {}),
+    mc_worker_api:insert(Connection, Collection, ?INIT_AUTH),
+
+    User1 = #mqtt_client{client_id = <<"client1">>, username = <<"test">>},
+    User2 = #mqtt_client{client_id = <<"client2">>, username = <<"root">>},
+    User3 = #mqtt_client{client_id = <<"client3">>},
+    ok = emqttd_access_control:auth(User1, <<"testpwd">>),
+    {error, _} = emqttd_access_control:auth(User1, <<"pwderror">>),
+    ok = emqttd_access_control:auth(User2, <<"pass">>),
+    ok = emqttd_access_control:auth(User2, <<>>),
+    {error, username_undefined} = emqttd_access_control:auth(User3, <<>>),
+    mc_worker_api:delete(Connection, Collection, {}).
 
 collection(Query) ->
     case emqttd_auth_mongo:config(Query) of
