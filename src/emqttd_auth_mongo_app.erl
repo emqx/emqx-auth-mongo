@@ -14,7 +14,7 @@
 %% limitations under the License.
 %%--------------------------------------------------------------------
 
--module(emqttd_plugin_mongo_app).
+-module(emqttd_auth_mongo_app).
 
 -author("Feng Lee<feng@emqtt.io").
 
@@ -23,7 +23,7 @@
 %% Application callbacks
 -export([start/2, prep_stop/1, stop/1]).
 
--define(APP, emqttd_plugin_mongo).
+-define(APP, emqttd_auth_mongo).
 
 %%--------------------------------------------------------------------
 %% Application callbacks
@@ -31,7 +31,8 @@
 
 start(_StartType, _StartArgs) ->
     application:ensure_all_started(mongodb),
-    {ok, Sup} = emqttd_plugin_mongo_sup:start_link(),
+    gen_conf:init(?APP),
+    {ok, Sup} = emqttd_auth_mongo_sup:start_link(),
     register_auth_mod(),
     {ok, Sup}.
 

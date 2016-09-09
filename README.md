@@ -1,83 +1,67 @@
 
-emqttd_plugin_mongo
-===================
+emqttd_auth_mongo
+=================
 
 Authentication with MongoDB
 
-Build
------
-
-This project is a plugin for emqttd broker. In emqttd project:
-
-If the submodule exists:
+Build the Plugin
+----------------
 
 ```
-git submodule update --remote plugins/emqttd_plugin_mongo
-```
-
-Orelse:
-
-```
-git submodule add https://github.com/emqtt/emqttd_plugin_mongo.git plugins/emqttd_plugin_mongo
-
-make && make dist
+make & make tests
 ```
 
 Configuration
 -------------
 
-File: etc/plugin.config
+File: etc/emqttd_auth_mongo.conf
 
 ```erlang
-[
-  {emqttd_plugin_mongo, [
+{mongo_pool, [
+  {pool_size, 8},
+  {auto_reconnect, 3},
 
-    {mongo_pool, [
-      {pool_size, 8},
-      {auto_reconnect, 3},
+  %% Mongodb Opts
+  {host, "localhost"},
+  {port, 27017},
+  %% {login, ""},
+  %% {password, ""},
+  {database, "mqtt"}
+]}.
 
-      %% Mongodb driver opts
-      {host, "localhost"},
-      {port, 27017},
-      %% {login, ""},
-      %% {password,""},
-      {database, "mqtt"}
-    ]},
+%% Variables: %u = username, %c = clientid
 
-    %% Superuser Query
-    {superquery, [
-        {collection, "mqtt_user"},
-        {super_field, "is_superuser"},
-        {selector, {"username", "%u"}}
-    ]},
+%% Superuser Query
+{superquery, pool, [
+  {collection, "mqtt_user"},
+  {super_field, "is_superuser"},
+  {selector, {"username", "%u"}}
+]}.
 
-    %% Authentication Query
-    {authquery, [
-        {collection, "mqtt_user"},
-        {password_field, "password"},
-        %% Hash Algorithm: plain, md5, sha, sha256, pbkdf2?
-        {password_hash, sha256},
-        {selector, {"username", "%u"}}
-    ]},
+%% Authentication Query
+{authquery, pool, [
+  {collection, "mqtt_user"},
+  {password_field, "password"},
+  %% Hash Algorithm: plain, md5, sha, sha256, pbkdf2?
+  {password_hash, sha256},
+  {selector, {"username", "%u"}}
+]}.
 
-    %% ACL Query: "%u" = username, "%c" = clientid
-    {aclquery, [
-        {collection, "mqtt_acl"},
-        {selector, {"username", "%u"}}
-    ]},
+%% ACL Query: "%u" = username, "%c" = clientid
+{aclquery, pool, [
+  {collection, "mqtt_acl"},
+  {selector, {"username", "%u"}}
+]}.
 
-    %% If no ACL rules matched, return...
-    {acl_nomatch, deny}
-
-  ]}
-].
+%% If no ACL rules matched, return...
+{acl_nomatch, deny}.
 ```
 
 Load the Plugin
 ---------------
 
 ```
-./bin/emqttd_ctl plugins load emqttd_plugin_mongo
+./bin/emqttd_ctl plugins load emqttd_auth_mongo
 ```
 
 MongoDB Database
@@ -122,6 +106,7 @@ mqtt_acl Collection
 ```
 
 For example:
+
 ```
 db.mqtt_acl.insert({username: "test", publish: ["t/1", "t/2"], subscribe: ["user/%u", "client/%c"]})
 db.mqtt_acl.insert({username: "admin", pubsub: ["#"]})

@@ -1,15 +1,15 @@
-{application, emqttd_plugin_mongo,
+{application, emqttd_auth_mongo,
  [
   {description, "Authentication with MongoDB"},
-  {vsn, "1.1.3"},
+  {vsn, "2.0"},
   {modules, []},
   {registered, []},
-  {applications, [
-                  kernel,
+  {applications, [kernel,
                   stdlib,
+                  crypto,
                   mongodb,
                   ecpool
                  ]},
-  {mod, { emqttd_plugin_mongo_app, []}},
+  {mod, {emqttd_auth_mongo_app, []}},
   {env, []}
  ]}.

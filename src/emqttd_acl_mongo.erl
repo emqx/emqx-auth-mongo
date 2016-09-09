@@ -19,9 +19,9 @@
 
 -behaviour(emqttd_acl_mod).
 
--include("emqttd_plugin_mongo.hrl").
+-include("emqttd_auth_mongo.hrl").
 
--include("../../../include/emqttd.hrl").
+-include_lib("emqttd/include/emqttd.hrl").
 
 %% ACL callbacks
 -export([init/1, check_acl/2, reload_acl/1, description/0]).
@@ -32,14 +32,14 @@ init({SuperQuery, AclQuery, AclNomatch}) ->
     {ok, #state{superquery = SuperQuery, aclquery = AclQuery, nomatch = AclNomatch}}.
 
 check_acl({#mqtt_client{username = <<$$, _/binary>>}, _PubSub, _Topic}, _State) ->
-    {error, bad_username};
+    ignore;
 
 check_acl({Client, PubSub, Topic}, #state{superquery = SuperQuery,
                                           aclquery   = AclQuery,
                                           nomatch    = Default}) ->
-    case emqttd_plugin_mongo:is_superuser(SuperQuery, Client) of
+    case emqttd_auth_mongo:is_superuser(SuperQuery, Client) of
         false -> #aclquery{collection = Coll, selector = Selector} = AclQuery,
-                 Row = emqttd_plugin_mongo:query(Coll, emqttd_plugin_mongo:replvar(Selector, Client)),
+                 Row = emqttd_auth_mongo:query(Coll, emqttd_auth_mongo:replvar(Selector, Client)),
                  case match(Client, Topic, topics(PubSub, Row)) of
                      matched -> allow;
                      nomatch -> Default
