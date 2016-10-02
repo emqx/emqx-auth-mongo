@@ -4,7 +4,7 @@ PROJECT_VERSION = 2.0
 
 DEPS = mongodb ecpool gen_conf
 
-dep_mongodb  = git git://github.com/comtihon/mongodb-erlang.git
+dep_mongodb  = git https://github.com/comtihon/mongodb-erlang
 dep_ecpool   = git https://github.com/emqtt/ecpool master
 dep_gen_conf = git https://github.com/emqtt/gen_conf master
 
