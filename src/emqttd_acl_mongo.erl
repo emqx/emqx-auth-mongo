@@ -26,25 +26,21 @@
 %% ACL callbacks
 -export([init/1, check_acl/2, reload_acl/1, description/0]).
 
--record(state, {superquery, aclquery, nomatch}).
+-record(state, {aclquery, nomatch}).
 
-init({SuperQuery, AclQuery, AclNomatch}) ->
-    {ok, #state{superquery = SuperQuery, aclquery = AclQuery, nomatch = AclNomatch}}.
+init({AclQuery, AclNomatch}) ->
+    {ok, #state{aclquery = AclQuery, nomatch = AclNomatch}}.
 
 check_acl({#mqtt_client{username = <<$$, _/binary>>}, _PubSub, _Topic}, _State) ->
     ignore;
 
-check_acl({Client, PubSub, Topic}, #state{superquery = SuperQuery,
-                                          aclquery   = AclQuery,
-                                          nomatch    = Default}) ->
-    case emqttd_auth_mongo:is_superuser(SuperQuery, Client) of
-        false -> #aclquery{collection = Coll, selector = Selector} = AclQuery,
-                 Row = emqttd_auth_mongo:query(Coll, emqttd_auth_mongo:replvar(Selector, Client)),
-                 case match(Client, Topic, topics(PubSub, Row)) of
-                     matched -> allow;
-                     nomatch -> Default
-                 end;
-        true  -> allow
+check_acl({Client, PubSub, Topic}, #state{aclquery = AclQuery,
+                                          nomatch  = Default}) ->
+    #aclquery{collection = Coll, selector = Selector} = AclQuery,
+    Row = emqttd_auth_mongo:query(Coll, emqttd_auth_mongo:replvar(Selector, Client)),
+    case match(Client, Topic, topics(PubSub, Row)) of
+        matched -> allow;
+        nomatch -> Default
     end.
 
 match(_Client, _Topic, []) ->

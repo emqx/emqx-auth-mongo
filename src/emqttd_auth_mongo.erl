@@ -23,83 +23,36 @@
 
 -include_lib("emqttd/include/emqttd.hrl").
 
--import(proplists, [get_value/3]).
-
 -export([init/1, check/3, description/0]).
 
 -behaviour(ecpool_worker).
 
--export([config/1, is_superuser/2, replvar/2, connect/1, query/2]).
+-export([replvar/2, connect/1, query/2]).
 
--record(state, {superquery, authquery}).
+-record(state, {authquery, superquery}).
  
 -define(EMPTY(Username), (Username =:= undefined orelse Username =:= <<>>)).
-
-%%--------------------------------------------------------------------
-%% Config
-%%--------------------------------------------------------------------
-
-config(superquery) ->
-    with_env(superquery, fun(Config) ->
-        #superquery{collection = list_to_binary(get_value(collection, Config, "mqtt_user")),
-                    field      = list_to_binary(get_value(super_field, Config, "is_superuser")),
-                    selector   = binary_selector(get_value(selector, Config, {"username", "%u"}))}
-    end);
-
-config(authquery) ->
-    with_env(authquery, fun(Config) ->
-        #authquery{collection = list_to_binary(get_value(collection, Config, "mqtt_user")),
-                   field      = list_to_binary(get_value(password_field, Config, "password")),
-                   hash       = get_value(password_hash, Config, sha256),
-                   selector   = binary_selector(get_value(selector, Config, {"username", "%u"}))}
-    end);
-
-config(aclquery) ->
-    with_env(aclquery, fun(Config) ->
-        #aclquery{collection = list_to_binary(get_value(collection, Config, "mqtt_user")),
-                   selector  = binary_selector(get_value(selector, Config, {"username", "%u"}))}
-    end);
-
-config(Key) ->
-    with_env(Key, fun(Env) -> Env end).
-
-with_env(Key, Fun) ->
-    case gen_conf:value(?APP, Key) of
-        {ok, Env}   -> Fun(Env);
-        undefined -> undefined
-    end.
-
-binary_selector({Field, Val}) ->
-    {list_to_binary(Field), case is_list(Val) of true -> list_to_binary(Val); false -> Val end}.
 
 %%--------------------------------------------------------------------
 %% Auth Mod Callback
 %%--------------------------------------------------------------------
 
-init({SuperQuery, AuthQuery}) ->
-  {ok, #state{superquery = SuperQuery, authquery = AuthQuery}}.
+init({AuthQuery, SuperQuery}) ->
+  {ok, #state{authquery = AuthQuery, superquery = SuperQuery}}.
 
-check(#mqtt_client{username = Username}, _Password, _State) when ?EMPTY(Username) ->
-    {error, username_undefined};
+check(#mqtt_client{username = Username}, Password, _State) when ?EMPTY(Username); ?EMPTY(Password) ->
+    {error, username_or_password_undefined};
 
-check(Client, Password, #state{superquery = SuperQuery}) when ?EMPTY(Password) ->
-    case is_superuser(SuperQuery, Client) of
-        true  -> ok;
-        false -> {error, password_undefined}
-    end;
-
-check(Client, Password, #state{superquery = SuperQuery,authquery = AuthQuery}) ->
+check(Client, Password, #state{authquery = AuthQuery, superquery = SuperQuery}) ->
     #authquery{collection = Collection, field = Field,
                hash = HashType, selector = Selector} = AuthQuery,
-    case is_superuser(SuperQuery, Client) of
-        false -> Selector1 = replvar(Selector, Client),
-                 UserMap   = query(Collection, Selector1),
-                 case maps:get(Field, UserMap, undefined) of
-                     undefined -> {error, notfound};
-                     PassHash  -> check_pass(PassHash, Password, HashType)
-                 end;
-        true  -> ok
-    end.
+    Selector1 = replvar(Selector, Client),
+    UserMap = query(Collection, Selector1),
+    Result = case maps:get(Field, UserMap, undefined) of
+                undefined -> {error, notfound};
+                PassHash  -> check_pass(PassHash, Password, HashType)
+             end,
+    case Result of ok -> {ok, is_superuser(SuperQuery, Client)}; Error -> Error end.
 
 check_pass(PassHash, Password, HashType) ->
     case PassHash =:= hash(HashType, Password) of
