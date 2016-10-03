@@ -18,6 +18,8 @@
 
 -compile(export_all).
 
+-import(proplists, [get_value/3]).
+
 -include_lib("emqttd/include/emqttd.hrl").
 
 -include_lib("common_test/include/ct.hrl").
@@ -58,7 +60,7 @@ end_per_suite(_Config) ->
 
 check_acl(Config) ->
     Connection = proplists:get_value(connection, Config),
-    Collection = collection(aclquery),
+    Collection = collection(aclquery, Config),
     mc_worker_api:delete(Connection, Collection, {}),
     mc_worker_api:insert(Connection, Collection, ?INIT_ACL),
     User1 = #mqtt_client{client_id = <<"client1">>, username = <<"testuser">>},
@@ -79,28 +81,28 @@ check_acl(Config) ->
 
 check_auth(Config) ->
     Connection = proplists:get_value(connection, Config),
-    Collection = collection(authquery),
+    Collection = collection(authquery, Config),
     mc_worker_api:delete(Connection, Collection, {}),
     mc_worker_api:insert(Connection, Collection, ?INIT_AUTH),
 
     User1 = #mqtt_client{client_id = <<"client1">>, username = <<"test">>},
     User2 = #mqtt_client{client_id = <<"client2">>, username = <<"root">>},
     User3 = #mqtt_client{client_id = <<"client3">>},
-    ok = emqttd_access_control:auth(User1, <<"testpwd">>),
+    {ok, false} = emqttd_access_control:auth(User1, <<"testpwd">>),
     {error, _} = emqttd_access_control:auth(User1, <<"pwderror">>),
-    ok = emqttd_access_control:auth(User2, <<"pass">>),
-    ok = emqttd_access_control:auth(User2, <<>>),
-    {error, username_undefined} = emqttd_access_control:auth(User3, <<>>),
+    {error, notfound} = emqttd_access_control:auth(User2, <<"pass">>),
+    {error, username_or_password_undefined} = emqttd_access_control:auth(User2, <<>>),
+    {error, username_or_password_undefined} = emqttd_access_control:auth(User3, <<>>),
     mc_worker_api:delete(Connection, Collection, {}).
 
-collection(Query) ->
-    case emqttd_auth_mongo:config(Query) of
-    #authquery{collection = AuthConnection} ->
-            AuthConnection;
-    #aclquery{collection = AclConnection} ->
-            AclConnection;
-    #superquery{collection = SuperConnection} ->
-            SuperConnection
+collection(Query, Config) ->
+    case Query of
+    superquery ->
+        list_to_binary(get_value(collection, Config, "mqtt_user"));
+    authquery ->
+        list_to_binary(get_value(collection, Config, "mqtt_user"));
+    aclquery ->
+        list_to_binary(get_value(collection, Config, "mqtt_acl"))
     end.
 
 ct_log(Connection, Collection, User1) ->
