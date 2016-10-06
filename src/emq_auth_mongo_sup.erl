@@ -14,11 +14,11 @@
 %% limitations under the License.
 %%--------------------------------------------------------------------
 
--module(emqttd_auth_mongo_sup).
+-module(emq_auth_mongo_sup).
 
 -behaviour(supervisor).
 
--include("emqttd_auth_mongo.hrl").
+-include("emq_auth_mongo.hrl").
 
 %% API
 -export([start_link/0]).
@@ -30,7 +30,7 @@ start_link() ->
   supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 init([]) ->
-    {ok, PoolEnv} = gen_conf:value(?APP, mongo_pool),
+    {ok, PoolEnv} = application:get_env(?APP, server),
     PoolSpec = ecpool:pool_spec(?APP, ?APP, ?APP, PoolEnv),
     {ok, {{one_for_all, 10, 100}, [PoolSpec]}}.
 
