@@ -15,11 +15,11 @@
 %%--------------------------------------------------------------------
 
 %% @doc Authentication with MongoDB.
--module(emqttd_auth_mongo).
+-module(emq_auth_mongo).
 
 -behaviour(emqttd_auth_mod).
 
--include("emqttd_auth_mongo.hrl").
+-include("emq_auth_mongo.hrl").
 
 -include_lib("emqttd/include/emqttd.hrl").
 

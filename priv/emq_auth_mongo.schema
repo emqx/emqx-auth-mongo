@@ -1,0 +1,123 @@
+%%-*- mode: erlang -*-
+%% emq_auth_mongo config
+{mapping, "emq.auth.mongo.server", "emq_auth_mongo.server", [
+  {default, {"localhost", 27017}},
+  {datatype, ip}
+]}.
+
+{mapping, "emq.auth.mongo.pool", "emq_auth_mongo.server", [
+  {default, 8},
+  {datatype, integer}
+]}.
+
+{mapping, "emq.auth.mongo.login", "emq_auth_mongo.server", [
+  {default, ""},
+  {datatype, string}
+]}.
+
+{mapping, "emq.auth.mongo.password", "emq_auth_mongo.server", [
+  {default, ""},
+  {datatype, string}
+]}.
+
+{mapping, "emq.auth.mongo.database", "emq_auth_mongo.server", [
+  {default, "mqtt"},
+  {datatype, string}
+]}.
+
+{translation, "emq_auth_mongo.server", fun(Conf) ->
+  {Host, Port} = cuttlefish:conf_get("emq.auth.mongo.server", Conf),
+  Pool = cuttlefish:conf_get("emq.auth.mongo.pool", Conf),
+  Login = cuttlefish:conf_get("emq.auth.mongo.login", Conf),
+  Passwd = cuttlefish:conf_get("emq.auth.mongo.password", Conf),
+  DB = cuttlefish:conf_get("emq.auth.mongo.database", Conf),
+  [{pool_size, Pool},
+   {auto_reconnect, 1},
+   {host, Host},
+   {port, Port},
+   {login, Login},
+   {password, Passwd},
+   {database, DB}]
+end}.
+
+{mapping, "emq.auth.mongo.authquery.collection", "emq_auth_mongo.authquery", [
+  {default, "mqtt_user"},
+  {datatype, string}
+]}.
+
+{mapping, "emq.auth.mongo.authquery.password_field", "emq_auth_mongo.authquery", [
+  {default, "password"},
+  {datatype, string}
+]}.
+
+{mapping, "emq.auth.mongo.authquery.password_hash", "emq_auth_mongo.authquery", [
+  {default, sha256},
+  {datatype, {enum, [plain, md5, sha, sha256, pbkdf2]}}
+]}.
+
+{mapping, "emq.auth.mongo.authquery.selector", "emq_auth_mongo.authquery", [
+  {default, ""},
+  {datatype, string}
+]}.
+
+{translation, "emq_auth_mongo.authquery", fun(Conf) ->
+  Collection = cuttlefish:conf_get("emq.auth.mongo.authquery.collection", Conf),
+  PasswordField = cuttlefish:conf_get("emq.auth.mongo.authquery.password_field", Conf),
+  PasswordHash = cuttlefish:conf_get("emq.auth.mongo.authquery.password_hash", Conf),
+  Selector = cuttlefish:conf_get("emq.auth.mongo.authquery.selector", Conf),
+  [{collection, Collection},
+  {password_field, PasswordField},
+  %% Hash Algorithm: plain, md5, sha, sha256, pbkdf2?
+  {password_hash, PasswordHash},
+  {selector, Selector}
+]
+end}.
+
+{mapping, "emq.auth.mongo.superquery.collection", "emq_auth_mongo.superquery", [
+  {default, "mqtt_user"},
+  {datatype, string}
+]}.
+
+{mapping, "emq.auth.mongo.superquery.super_field", "emq_auth_mongo.superquery", [
+  {default, "is_superuser"},
+  {datatype, string}
+]}.
+
+{mapping, "emq.auth.mongo.superquery.selector", "emq_auth_mongo.superquery", [
+  {default, ""},
+  {datatype, string}
+]}.
+
+{translation, "emq_auth_mongo.superquery", fun(Conf) ->
+  Collection = cuttlefish:conf_get("emq.auth.mongo.superquery.collection", Conf),
+  SuperField = cuttlefish:conf_get("emq.auth.mongo.superquery.super_field", Conf),
+  Selector = cuttlefish:conf_get("emq.auth.mongo.superquery.selector", Conf),
+  [{collection, Collection},
+  {super_field, SuperField},
+  {selector, Selector}
+]
+end}.
+
+{mapping, "emq.auth.mongo.aclquery.collection", "emq_auth_mongo.aclquery", [
+  {default, "mqtt_user"},
+  {datatype, string}
+]}.
+
+{mapping, "emq.auth.mongo.aclquery.selector", "emq_auth_mongo.aclquery", [
+  {default, ""},
+  {datatype, string}
+]}.
+
+{translation, "emq_auth_mongo.aclquery", fun(Conf) ->
+  Collection = cuttlefish:conf_get("emq.auth.mongo.aclquery.collection", Conf),
+  Selector = cuttlefish:conf_get("emq.auth.mongo.aclquery.selector", Conf),
+  [{collection, Collection},
+  {selector, Selector}
+]
+end}.
+
+{mapping, "emq.auth.mongo.acl.nomatch", "emq_auth_mongo.acl_nomatch", [
+  {default, deny},
+  {datatype, {enum, [deny, allow]}}
+]}.
+
