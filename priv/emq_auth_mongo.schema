@@ -116,7 +116,7 @@ end}.
 ]
 end}.
 
-{mapping, "emq.auth.mongo.acl.nomatch", "emq_auth_mongo.acl_nomatch", [
+{mapping, "emq.auth.mongo.acl_nomatch", "emq_auth_mongo.acl_nomatch", [
   {default, deny},
   {datatype, {enum, [deny, allow]}}
 ]}.
