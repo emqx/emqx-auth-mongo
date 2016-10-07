@@ -40,31 +40,31 @@
    {database, DB}]
 end}.
 
-{mapping, "emq.authquery.mongo.collection", "emq_auth_mongo.authquery", [
+{mapping, "emq.auth.mongo.authquery.collection", "emq_auth_mongo.authquery", [
   {default, "mqtt_user"},
   {datatype, string}
 ]}.
 
-{mapping, "emq.authquery.mongo.password_field", "emq_auth_mongo.authquery", [
+{mapping, "emq.auth.mongo.authquery.password_field", "emq_auth_mongo.authquery", [
   {default, "password"},
   {datatype, string}
 ]}.
 
-{mapping, "emq.authquery.mongo.password_hash", "emq_auth_mongo.authquery", [
+{mapping, "emq.auth.mongo.authquery.password_hash", "emq_auth_mongo.authquery", [
   {default, sha256},
   {datatype, {enum, [plain, md5, sha, sha256, pbkdf2]}}
 ]}.
 
-{mapping, "emq.authquery.mongo.selector", "emq_auth_mongo.authquery", [
+{mapping, "emq.auth.mongo.authquery.selector", "emq_auth_mongo.authquery", [
   {default, ""},
   {datatype, string}
 ]}.
 
 {translation, "emq_auth_mongo.authquery", fun(Conf) ->
-  Collection = cuttlefish:conf_get("emq.authquery.mongo.collection", Conf),
-  PasswordField = cuttlefish:conf_get("emq.authquery.mongo.password_field", Conf),
-  PasswordHash = cuttlefish:conf_get("emq.authquery.mongo.password_hash", Conf),
-  Selector = cuttlefish:conf_get("emq.authquery.mongo.selector", Conf),
+  Collection = cuttlefish:conf_get("emq.auth.mongo.authquery.collection", Conf),
+  PasswordField = cuttlefish:conf_get("emq.auth.mongo.authquery.password_field", Conf),
+  PasswordHash = cuttlefish:conf_get("emq.auth.mongo.authquery.password_hash", Conf),
+  Selector = cuttlefish:conf_get("emq.auth.mongo.authquery.selector", Conf),
   [{collection, Collection},
   {password_field, PasswordField},
   %% Hash Algorithm: plain, md5, sha, sha256, pbkdf2?
@@ -73,44 +73,44 @@ end}.
 ]
 end}.
 
-{mapping, "emq.superquery.mongo.collection", "emq_auth_mongo.superquery", [
+{mapping, "emq.auth.mongo.superquery.collection", "emq_auth_mongo.superquery", [
   {default, "mqtt_user"},
   {datatype, string}
 ]}.
 
-{mapping, "emq.superquery.mongo.super_field", "emq_auth_mongo.superquery", [
+{mapping, "emq.auth.mongo.superquery.super_field", "emq_auth_mongo.superquery", [
   {default, "is_superuser"},
   {datatype, string}
 ]}.
 
-{mapping, "emq.superquery.mongo.selector", "emq_auth_mongo.superquery", [
+{mapping, "emq.auth.mongo.superquery.selector", "emq_auth_mongo.superquery", [
   {default, ""},
   {datatype, string}
 ]}.
 
 {translation, "emq_auth_mongo.superquery", fun(Conf) ->
-  Collection = cuttlefish:conf_get("emq.superquery.mongo.collection", Conf),
-  SuperField = cuttlefish:conf_get("emq.superquery.mongo.super_field", Conf),
-  Selector = cuttlefish:conf_get("emq.superquery.mongo.selector", Conf),
+  Collection = cuttlefish:conf_get("emq.auth.mongo.superquery.collection", Conf),
+  SuperField = cuttlefish:conf_get("emq.auth.mongo.superquery.super_field", Conf),
+  Selector = cuttlefish:conf_get("emq.auth.mongo.superquery.selector", Conf),
   [{collection, Collection},
   {super_field, SuperField},
   {selector, Selector}
 ]
 end}.
 
-{mapping, "emq.aclquery.mongo.collection", "emq_auth_mongo.aclquery", [
+{mapping, "emq.auth.mongo.aclquery.collection", "emq_auth_mongo.aclquery", [
   {default, "mqtt_user"},
   {datatype, string}
 ]}.
 
-{mapping, "emq.aclquery.mongo.selector", "emq_auth_mongo.aclquery", [
+{mapping, "emq.auth.mongo.aclquery.selector", "emq_auth_mongo.aclquery", [
   {default, ""},
   {datatype, string}
 ]}.
 
 {translation, "emq_auth_mongo.aclquery", fun(Conf) ->
-  Collection = cuttlefish:conf_get("emq.aclquery.mongo.collection", Conf),
-  Selector = cuttlefish:conf_get("emq.aclquery.mongo.selector", Conf),
+  Collection = cuttlefish:conf_get("emq.auth.mongo.aclquery.collection", Conf),
+  Selector = cuttlefish:conf_get("emq.auth.mongo.aclquery.selector", Conf),
   [{collection, Collection},
   {selector, Selector}
 ]
