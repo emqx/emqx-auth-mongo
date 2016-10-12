@@ -7,10 +7,8 @@ DEPS = mongodb ecpool
 dep_mongodb  = git https://github.com/comtihon/mongodb-erlang
 dep_ecpool   = git https://github.com/emqtt/ecpool master
 
-BUILD_DEPS = emqttd
+BUILD_DEPS = emqttd cuttlefish
 dep_emqttd = git https://github.com/emqtt/emqttd emq30
-
-TEST_DEPS = cuttlefish
 dep_cuttlefish = git https://github.com/basho/cuttlefish master
 
 ERLC_OPTS += +'{parse_transform, lager_transform}'

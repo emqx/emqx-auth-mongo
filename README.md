@@ -1,6 +1,6 @@
 
-emqttd_auth_mongo
-=================
+emq_auth_mongo
+==============
 
 Authentication with MongoDB
 
@@ -14,54 +14,55 @@ make & make tests
 Configuration
 -------------
 
-File: etc/emqttd_auth_mongo.conf
+File: etc/emq_auth_mongo.conf
 
 ```erlang
-{mongo_pool, [
-  {pool_size, 8},
-  {auto_reconnect, 3},
+## Mongo Server
+auth.mongo.server = 127.0.0.1:27017
 
-  %% Mongodb Opts
-  {host, "localhost"},
-  {port, 27017},
-  %% {login, ""},
-  %% {password, ""},
-  {database, "mqtt"}
-]}.
+## Mongo Pool Size
+auth.mongo.pool = 8
 
-%% Variables: %u = username, %c = clientid
+## Mongo User
+## auth.mongo.user = 
 
-%% Superuser Query
-{superquery, pool, [
-  {collection, "mqtt_user"},
-  {super_field, "is_superuser"},
-  {selector, {"username", "%u"}}
-]}.
+## Mongo Password
+## auth.mongo.password = 
 
-%% Authentication Query
-{authquery, pool, [
-  {collection, "mqtt_user"},
-  {password_field, "password"},
-  %% Hash Algorithm: plain, md5, sha, sha256, pbkdf2?
-  {password_hash, sha256},
-  {selector, {"username", "%u"}}
-]}.
+## Mongo Database
+auth.mongo.database = mqtt
 
-%% ACL Query: "%u" = username, "%c" = clientid
-{aclquery, pool, [
-  {collection, "mqtt_acl"},
-  {selector, {"username", "%u"}}
-]}.
+## authquery
+auth.mongo.authquery.collection = mqtt_user
 
-%% If no ACL rules matched, return...
-{acl_nomatch, deny}.
+auth.mongo.authquery.password_field = password
+
+auth.mongo.authquery.password_hash = sha256
+
+auth.mongo.authquery.selector = username=%u
+
+## superquery
+auth.mongo.superquery.collection = mqtt_user
+
+auth.mongo.superquery.super_field = is_superuser
+
+auth.mongo.superquery.selector = username=%u
+
+## aclquery
+auth.mongo.aclquery.collection = mqtt_user
+
+auth.mongo.aclquery.selector = username=%u
+
+## acl_nomatch
+auth.mongo.acl_nomatch = deny
+
 ```
 
 Load the Plugin
 ---------------
 
 ```
-./bin/emqttd_ctl plugins load emqttd_auth_mongo
+./bin/emqttd_ctl plugins load emq_auth_mongo
 ```
 
 MongoDB Database
