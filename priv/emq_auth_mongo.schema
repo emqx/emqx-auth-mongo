@@ -1,7 +1,7 @@
 %%-*- mode: erlang -*-
 %% emq_auth_mongo config mapping
 {mapping, "auth.mongo.server", "emq_auth_mongo.server", [
-  {default, {"localhost", 27017}},
+  {default, {"127.0.0.1", 27017}},
   {datatype, [integer, ip]}
 ]}.
 
@@ -40,31 +40,31 @@
    {database, DB}]
 end}.
 
-{mapping, "auth.mongo.authquery.collection", "emq_auth_mongo.authquery", [
+{mapping, "auth.mongo.auth_query.collection", "emq_auth_mongo.auth_query", [
   {default, "mqtt_user"},
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.authquery.password_field", "emq_auth_mongo.authquery", [
+{mapping, "auth.mongo.auth_query.password_field", "emq_auth_mongo.auth_query", [
   {default, "password"},
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.authquery.password_hash", "emq_auth_mongo.authquery", [
+{mapping, "auth.mongo.auth_query.password_hash", "emq_auth_mongo.auth_query", [
   {default, sha256},
   {datatype, {enum, [plain, md5, sha, sha256, pbkdf2]}}
 ]}.
 
-{mapping, "auth.mongo.authquery.selector", "emq_auth_mongo.authquery", [
+{mapping, "auth.mongo.auth_query.selector", "emq_auth_mongo.auth_query", [
   {default, ""},
   {datatype, string}
 ]}.
 
-{translation, "emq_auth_mongo.authquery", fun(Conf) ->
-  Collection = cuttlefish:conf_get("auth.mongo.authquery.collection", Conf),
-  PasswordField = cuttlefish:conf_get("auth.mongo.authquery.password_field", Conf),
-  PasswordHash = cuttlefish:conf_get("auth.mongo.authquery.password_hash", Conf),
-  Selector = cuttlefish:conf_get("auth.mongo.authquery.selector", Conf),
+{translation, "emq_auth_mongo.auth_query", fun(Conf) ->
+  Collection = cuttlefish:conf_get("auth.mongo.auth_query.collection", Conf),
+  PasswordField = cuttlefish:conf_get("auth.mongo.auth_query.password_field", Conf),
+  PasswordHash = cuttlefish:conf_get("auth.mongo.auth_query.password_hash", Conf),
+  Selector = cuttlefish:conf_get("auth.mongo.auth_query.selector", Conf),
   [{collection, Collection},
   {password_field, PasswordField},
   %% Hash Algorithm: plain, md5, sha, sha256, pbkdf2?
@@ -73,44 +73,44 @@ end}.
 ]
 end}.
 
-{mapping, "auth.mongo.superquery.collection", "emq_auth_mongo.superquery", [
+{mapping, "auth.mongo.super_query.collection", "emq_auth_mongo.super_query", [
   {default, "mqtt_user"},
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.superquery.super_field", "emq_auth_mongo.superquery", [
+{mapping, "auth.mongo.super_query.super_field", "emq_auth_mongo.super_query", [
   {default, "is_superuser"},
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.superquery.selector", "emq_auth_mongo.superquery", [
+{mapping, "auth.mongo.super_query.selector", "emq_auth_mongo.super_query", [
   {default, ""},
   {datatype, string}
 ]}.
 
-{translation, "emq_auth_mongo.superquery", fun(Conf) ->
-  Collection = cuttlefish:conf_get("auth.mongo.superquery.collection", Conf),
-  SuperField = cuttlefish:conf_get("auth.mongo.superquery.super_field", Conf),
-  Selector = cuttlefish:conf_get("auth.mongo.superquery.selector", Conf),
+{translation, "emq_auth_mongo.super_query", fun(Conf) ->
+  Collection = cuttlefish:conf_get("auth.mongo.super_query.collection", Conf),
+  SuperField = cuttlefish:conf_get("auth.mongo.super_query.super_field", Conf),
+  Selector = cuttlefish:conf_get("auth.mongo.super_query.selector", Conf),
   [{collection, Collection},
   {super_field, SuperField},
   {selector, Selector}
 ]
 end}.
 
-{mapping, "auth.mongo.aclquery.collection", "emq_auth_mongo.aclquery", [
+{mapping, "auth.mongo.acl_query.collection", "emq_auth_mongo.acl_query", [
   {default, "mqtt_user"},
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.aclquery.selector", "emq_auth_mongo.aclquery", [
+{mapping, "auth.mongo.acl_query.selector", "emq_auth_mongo.acl_query", [
   {default, ""},
   {datatype, string}
 ]}.
 
-{translation, "emq_auth_mongo.aclquery", fun(Conf) ->
-  Collection = cuttlefish:conf_get("auth.mongo.aclquery.collection", Conf),
-  Selector = cuttlefish:conf_get("auth.mongo.aclquery.selector", Conf),
+{translation, "emq_auth_mongo.acl_query", fun(Conf) ->
+  Collection = cuttlefish:conf_get("auth.mongo.acl_query.collection", Conf),
+  Selector = cuttlefish:conf_get("auth.mongo.acl_query.selector", Conf),
   [{collection, Collection},
   {selector, Selector}
 ]

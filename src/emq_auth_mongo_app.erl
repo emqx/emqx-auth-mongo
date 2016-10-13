@@ -33,8 +33,8 @@
 
 start(_StartType, _StartArgs) ->
     {ok, Sup} = emq_auth_mongo_sup:start_link(),
-    if_enabled(authquery, fun reg_authmod/1),
-    if_enabled(aclquery,  fun reg_aclmod/1),
+    if_enabled(auth_query, fun reg_authmod/1),
+    if_enabled(acl_query,  fun reg_aclmod/1),
     {ok, Sup}.
 
 prep_stop(State) ->
@@ -46,7 +46,7 @@ stop(_State) ->
     ok.
 
 reg_authmod(AuthQuery) ->
-    SuperQuery = r(superquery, application:get_env(?APP, superquery, undefined)),
+    SuperQuery = r(super_query, application:get_env(?APP, super_query, undefined)),
     emqttd_access_control:register_mod(auth, emq_auth_mongo, {AuthQuery, SuperQuery}).
 
 reg_aclmod(AclQuery) ->
@@ -66,18 +66,18 @@ if_enabled(Name, Fun) ->
 
 r(_, undefined) -> undefined;
 
-r(superquery, Config) ->
+r(super_query, Config) ->
     #superquery{collection = list_to_binary(get_value(collection, Config, "mqtt_user")),
                 field      = list_to_binary(get_value(super_field, Config, "is_superuser")),
                 selector   = parse_selector(get_value(selector, Config, {"username", "%u"}))};
 
-r(authquery, Config) ->
+r(auth_query, Config) ->
     #authquery{collection = list_to_binary(get_value(collection, Config, "mqtt_user")),
                field      = list_to_binary(get_value(password_field, Config, "password")),
                hash       = get_value(password_hash, Config, sha256),
                selector   = parse_selector(get_value(selector, Config, {"username", "%u"}))};
 
-r(aclquery, Config) ->
+r(acl_query, Config) ->
     #aclquery{collection = list_to_binary(get_value(collection, Config, "mqtt_acl")),
               selector   = parse_selector(get_value(selector, Config, {"username", "%u"}))}.
 
