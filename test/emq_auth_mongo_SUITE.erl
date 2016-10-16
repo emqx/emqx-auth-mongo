@@ -60,7 +60,6 @@ check_acl(Config) ->
     Connection = proplists:get_value(connection, Config),
     {ok, AppConfig} = application:get_env(emq_auth_mongo, acl_query),
     Collection = collection(aclquery, AppConfig),
-    ct:log("Collection:~p", [Collection]),
     mc_worker_api:delete(Connection, Collection, {}),
     mc_worker_api:insert(Connection, Collection, ?INIT_ACL),
     User1 = #mqtt_client{client_id = <<"client1">>, username = <<"testuser">>},
@@ -83,7 +82,6 @@ check_auth(Config) ->
     Connection = proplists:get_value(connection, Config),
     {ok, AppConfig} = application:get_env(emq_auth_mongo, auth_query),
     Collection = collection(authquery, AppConfig),
-    ct:log("Connection:~p", [Connection]),
     mc_worker_api:delete(Connection, Collection, {}),
     mc_worker_api:insert(Connection, Collection, ?INIT_AUTH),
 
@@ -126,7 +124,7 @@ start_apps(App, DataDir) ->
     Schema = cuttlefish_schema:files([filename:join([DataDir, atom_to_list(App) ++ ".schema"])]),
     Conf = conf_parse:file(filename:join([DataDir, atom_to_list(App) ++ ".conf"])),
     NewConfig = cuttlefish_generator:map(Schema, Conf),
-    ct:log("NewConfig:~p", [NewConfig]),
+%%    ct:log("NewConfig:~p", [NewConfig]),
     Vals = proplists:get_value(App, NewConfig),
     [application:set_env(App, Par, Value) || {Par, Value} <- Vals],
     application:ensure_all_started(App).
