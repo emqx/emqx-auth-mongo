@@ -31,13 +31,19 @@
   Login = cuttlefish:conf_get("auth.mongo.login", Conf),
   Passwd = cuttlefish:conf_get("auth.mongo.password", Conf),
   DB = cuttlefish:conf_get("auth.mongo.database", Conf),
+  Login0 = case Login =:= [] of
+    true -> [];
+    false -> [{login, Login}]
+  end,
+  Passwd0 = case Passwd =:= [] of
+    true -> [];
+    false -> [{password, Passwd}]
+  end,
   [{pool_size, Pool},
    {auto_reconnect, 1},
    {host, Host},
    {port, Port},
-   {login, Login},
-   {password, Passwd},
-   {database, DB}]
+   {database, DB}] ++ Login0 ++ Passwd0
 end}.
 
 {mapping, "auth.mongo.auth_query.collection", "emq_auth_mongo.auth_query", [
