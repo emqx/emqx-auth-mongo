@@ -8,9 +8,10 @@ ebin
 rel/example_project
 .concrete/DEV_MODE
 .rebar
+.DS_Store
 .erlang.mk/
 emqttd_auth_mongo.d
 ct.coverdata
 logs/
 test/ct.cover.spec
-
+data/

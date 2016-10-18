@@ -15,11 +15,11 @@
 %%--------------------------------------------------------------------
 
 %% @doc ACL with MongoDB.
--module(emqttd_acl_mongo).
+-module(emq_acl_mongo).
 
 -behaviour(emqttd_acl_mod).
 
--include("emqttd_auth_mongo.hrl").
+-include("emq_auth_mongo.hrl").
 
 -include_lib("emqttd/include/emqttd.hrl").
 
@@ -37,7 +37,7 @@ check_acl({#mqtt_client{username = <<$$, _/binary>>}, _PubSub, _Topic}, _State) 
 check_acl({Client, PubSub, Topic}, #state{aclquery = AclQuery,
                                           nomatch  = Default}) ->
     #aclquery{collection = Coll, selector = Selector} = AclQuery,
-    Row = emqttd_auth_mongo:query(Coll, emqttd_auth_mongo:replvar(Selector, Client)),
+    Row = emq_auth_mongo:query(Coll, emq_auth_mongo:replvar(Selector, Client)),
     case match(Client, Topic, topics(PubSub, Row)) of
         matched -> allow;
         nomatch -> Default

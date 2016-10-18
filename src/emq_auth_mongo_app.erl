@@ -14,11 +14,11 @@
 %% limitations under the License.
 %%--------------------------------------------------------------------
 
--module(emqttd_auth_mongo_app).
+-module(emq_auth_mongo_app).
 
 -author("Feng Lee<feng@emqtt.io").
 
--include("emqttd_auth_mongo.hrl").
+-include("emq_auth_mongo.hrl").
 
 -behaviour(application).
 
@@ -32,54 +32,59 @@
 %%--------------------------------------------------------------------
 
 start(_StartType, _StartArgs) ->
-    gen_conf:init(?APP),
-    application:ensure_all_started(mongodb),
-    {ok, Sup} = emqttd_auth_mongo_sup:start_link(),
-    if_enabled(authquery, fun(AuthQuery) ->
-        SuperQuery = r(superquery, gen_conf:value(?APP, superquery, undefined)),
-        emqttd_access_control:register_mod(auth, emqttd_auth_mongo, {AuthQuery, SuperQuery})
-    end),
-    if_enabled(aclquery, fun(AclQuery) ->
-        {ok, AclNomatch} = gen_conf:value(?APP, acl_nomatch),
-        emqttd_access_control:register_mod(acl, emqttd_acl_mongo, {AclQuery, AclNomatch})
-    end),
+    {ok, Sup} = emq_auth_mongo_sup:start_link(),
+    if_enabled(auth_query, fun reg_authmod/1),
+    if_enabled(acl_query,  fun reg_aclmod/1),
     {ok, Sup}.
 
 prep_stop(State) ->
-    emqttd_access_control:unregister_mod(acl, emqttd_acl_mongo),
-    emqttd_access_control:unregister_mod(auth, emqttd_auth_mongo),
+    emqttd_access_control:unregister_mod(acl, emq_acl_mongo),
+    emqttd_access_control:unregister_mod(auth, emq_auth_mongo),
     State.
 
 stop(_State) ->
     ok.
+
+reg_authmod(AuthQuery) ->
+    SuperQuery = r(super_query, application:get_env(?APP, super_query, undefined)),
+    emqttd_access_control:register_mod(auth, emq_auth_mongo, {AuthQuery, SuperQuery}).
+
+reg_aclmod(AclQuery) ->
+    {ok, AclNomatch} = application:get_env(?APP, acl_nomatch),
+    emqttd_access_control:register_mod(acl, emq_acl_mongo, {AclQuery, AclNomatch}).
+
 
 %%--------------------------------------------------------------------
 %% Internal Functions
 %%--------------------------------------------------------------------
 
 if_enabled(Name, Fun) ->
-    case gen_conf:value(?APP, Name) of
+    case application:get_env(?APP, Name) of
         {ok, Config} -> Fun(r(Name, Config));
         undefined    -> ok
     end.
 
 r(_, undefined) -> undefined;
 
-r(superquery, Config) ->
+r(super_query, Config) ->
     #superquery{collection = list_to_binary(get_value(collection, Config, "mqtt_user")),
                 field      = list_to_binary(get_value(super_field, Config, "is_superuser")),
-                selector   = binary_selector(get_value(selector, Config, {"username", "%u"}))};
+                selector   = parse_selector(get_value(selector, Config, {"username", "%u"}))};
 
-r(authquery, Config) ->
+r(auth_query, Config) ->
     #authquery{collection = list_to_binary(get_value(collection, Config, "mqtt_user")),
                field      = list_to_binary(get_value(password_field, Config, "password")),
                hash       = get_value(password_hash, Config, sha256),
-               selector   = binary_selector(get_value(selector, Config, {"username", "%u"}))};
+               selector   = parse_selector(get_value(selector, Config, {"username", "%u"}))};
 
-r(aclquery, Config) ->
+r(acl_query, Config) ->
     #aclquery{collection = list_to_binary(get_value(collection, Config, "mqtt_acl")),
-              selector   = binary_selector(get_value(selector, Config, {"username", "%u"}))}.
+              selector   = parse_selector(get_value(selector, Config, {"username", "%u"}))}.
 
-binary_selector({Field, Val}) ->
-    {list_to_binary(Field), case is_list(Val) of true -> list_to_binary(Val); false -> Val end}.
+parse_selector(Selector) ->
+    case string:tokens(Selector, "=") of
+        [Field, Val] -> {list_to_binary(Field), Val};
+        _ -> {<<"username">>, "%u"}
+    end.
+
 
