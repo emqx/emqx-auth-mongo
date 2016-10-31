@@ -26,7 +26,7 @@
 ]}.
 
 {translation, "emq_auth_mongo.server", fun(Conf) ->
-  {RHost, RPort} =
+  {MgHost, MgPort} =
   case cuttlefish:conf_get("auth.mongo.server", Conf) of
     {Ip, Port} -> {Ip, Port};
     S          -> case string:tokens(S, ":") of
@@ -48,8 +48,8 @@
   end,
   [{pool_size, Pool},
    {auto_reconnect, 1},
-   {host, RHost},
-   {port, RPort},
+   {host, MgHost},
+   {port, MgPort},
    {database, DB}] ++ Login0 ++ Passwd0
 end}.
 
