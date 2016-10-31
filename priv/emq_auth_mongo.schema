@@ -2,7 +2,7 @@
 %% emq_auth_mongo config mapping
 {mapping, "auth.mongo.server", "emq_auth_mongo.server", [
   {default, {"127.0.0.1", 27017}},
-  {datatype, [integer, ip]}
+  {datatype, [integer, ip, string]}
 ]}.
 
 {mapping, "auth.mongo.pool", "emq_auth_mongo.server", [
@@ -26,7 +26,14 @@
 ]}.
 
 {translation, "emq_auth_mongo.server", fun(Conf) ->
-  {Host, Port} = cuttlefish:conf_get("auth.mongo.server", Conf),
+  {MgHost, MgPort} =
+  case cuttlefish:conf_get("auth.mongo.server", Conf) of
+    {Ip, Port} -> {Ip, Port};
+    S          -> case string:tokens(S, ":") of
+                    [Domain]       -> {Domain, 27017};
+                    [Domain, Port] -> {Domain, list_to_integer(Port)}
+                  end
+    end,
   Pool = cuttlefish:conf_get("auth.mongo.pool", Conf),
   Login = cuttlefish:conf_get("auth.mongo.login", Conf),
   Passwd = cuttlefish:conf_get("auth.mongo.password", Conf),
@@ -41,8 +48,8 @@
   end,
   [{pool_size, Pool},
    {auto_reconnect, 1},
-   {host, Host},
-   {port, Port},
+   {host, MgHost},
+   {port, MgPort},
    {database, DB}] ++ Login0 ++ Passwd0
 end}.
 
