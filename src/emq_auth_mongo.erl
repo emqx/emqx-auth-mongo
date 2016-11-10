@@ -79,9 +79,9 @@ is_superuser(#superquery{collection = Coll, field = Field, selector = Selector},
         _False -> false
     end.
 
-replvar({Field, <<"%u">>}, #mqtt_client{username = Username}) ->
+replvar({Field, "%u"}, #mqtt_client{username = Username}) ->
     {Field, Username};
-replvar({Field, <<"%c">>}, #mqtt_client{client_id = ClientId}) ->
+replvar({Field, "%c"}, #mqtt_client{client_id = ClientId}) ->
     {Field, ClientId};
 replvar(Selector, _Client) ->
     Selector.
