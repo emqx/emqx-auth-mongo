@@ -83,8 +83,8 @@ r(acl_query, Config) ->
 
 parse_selector(Selector) ->
     case string:tokens(Selector, "=") of
-        [Field, Val] -> {list_to_binary(Field), Val};
-        _ -> {<<"username">>, "%u"}
+        [Field, Val] -> {list_to_binary(Field), list_to_binary(Val)};
+        _ -> {<<"username">>, <<"%u">>}
     end.
 
 
