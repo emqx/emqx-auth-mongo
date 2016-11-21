@@ -24,7 +24,7 @@ auth.mongo.server = 127.0.0.1:27017
 auth.mongo.pool = 8
 
 ## Mongo User
-## auth.mongo.user = 
+## auth.mongo.login = 
 
 ## Mongo Password
 ## auth.mongo.password = 
