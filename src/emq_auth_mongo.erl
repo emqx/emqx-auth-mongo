@@ -49,7 +49,7 @@ check(Client, Password, #state{authquery = AuthQuery, superquery = SuperQuery}) 
     Selector1 = replvar(Selector, Client),
     UserMap = query(Collection, Selector1),
     case maps:get(Field, UserMap, undefined) of
-        undefined -> {error, notfound};
+        undefined -> ignore;
         PassHash  -> 
             case check_pass(PassHash, Password, HashType) of 
                 ok -> {ok, is_superuser(SuperQuery, Client)}; 
