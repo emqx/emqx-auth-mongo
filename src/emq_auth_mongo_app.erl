@@ -50,8 +50,7 @@ reg_authmod(AuthQuery) ->
     emqttd_access_control:register_mod(auth, emq_auth_mongo, {AuthQuery, SuperQuery}).
 
 reg_aclmod(AclQuery) ->
-    {ok, AclNomatch} = application:get_env(?APP, acl_nomatch),
-    emqttd_access_control:register_mod(acl, emq_acl_mongo, {AclQuery, AclNomatch}).
+    emqttd_access_control:register_mod(acl, emq_acl_mongo, AclQuery).
 
 
 %%--------------------------------------------------------------------
