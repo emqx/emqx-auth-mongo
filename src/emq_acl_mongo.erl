@@ -26,20 +26,21 @@
 %% ACL callbacks
 -export([init/1, check_acl/2, reload_acl/1, description/0]).
 
--record(state, {aclquery}).
+-record(state, {aclquery, nomatch}).
 
-init(AclQuery) ->
-    {ok, #state{aclquery = AclQuery}}.
+init({AclQuery, AclNomatch}) ->
+    {ok, #state{aclquery = AclQuery, nomatch = AclNomatch}}.
 
 check_acl({#mqtt_client{username = <<$$, _/binary>>}, _PubSub, _Topic}, _State) ->
     ignore;
 
-check_acl({Client, PubSub, Topic}, #state{aclquery = AclQuery}) ->
+check_acl({Client, PubSub, Topic}, #state{aclquery = AclQuery,
+                                          nomatch  = Default}) ->
     #aclquery{collection = Coll, selector = Selector} = AclQuery,
     Row = emq_auth_mongo:query(Coll, emq_auth_mongo:replvar(Selector, Client)),
     case match(Client, Topic, topics(PubSub, Row)) of
         matched -> allow;
-        nomatch -> ignore
+        nomatch -> Default
     end.
 
 match(_Client, _Topic, []) ->
