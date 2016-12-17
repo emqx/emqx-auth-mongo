@@ -7,10 +7,8 @@ DEPS = mongodb ecpool
 dep_mongodb  = git https://github.com/comtihon/mongodb-erlang
 dep_ecpool   = git https://github.com/emqtt/ecpool master
 
-BUILD_DEPS = emqttd
+BUILD_DEPS = emqttd cuttlefish
 dep_emqttd = git https://github.com/emqtt/emqttd master
-
-TEST_DEPS = cuttlefish
 dep_cuttlefish = git https://github.com/emqtt/cuttlefish
 
 ERLC_OPTS += +'{parse_transform, lager_transform}'
@@ -22,5 +20,5 @@ include erlang.mk
 app:: rebar.config
 
 app.config::
-	cuttlefish -l info -e etc/ -c etc/emq_auth_mongo.conf -i priv/emq_auth_mongo.schema -d data
+	deps/cuttlefish/cuttlefish -l info -e etc/ -c etc/emq_auth_mongo.conf -i priv/emq_auth_mongo.schema -d data
 

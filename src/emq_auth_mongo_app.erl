@@ -53,7 +53,6 @@ reg_aclmod(AclQuery) ->
     {ok, AclNomatch} = application:get_env(?APP, acl_nomatch),
     emqttd_access_control:register_mod(acl, emq_acl_mongo, {AclQuery, AclNomatch}).
 
-
 %%--------------------------------------------------------------------
 %% Internal Functions
 %%--------------------------------------------------------------------
