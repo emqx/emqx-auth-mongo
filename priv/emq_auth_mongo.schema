@@ -88,7 +88,7 @@ end}.
 
 {mapping, "auth.mongo.super_query", "emq_auth_mongo.super_query", [
   {default, off},
-  {datatype, string}
+  {datatype, flag}
 ]}.
 
 {mapping, "auth.mongo.super_query.collection", "emq_auth_mongo.super_query", [
