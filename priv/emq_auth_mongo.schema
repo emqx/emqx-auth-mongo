@@ -86,6 +86,11 @@ end}.
 ]
 end}.
 
+{mapping, "auth.mongo.super_query", "emq_auth_mongo.super_query", [
+  {default, off},
+  {datatype, string}
+]}.
+
 {mapping, "auth.mongo.super_query.collection", "emq_auth_mongo.super_query", [
   {default, "mqtt_user"},
   {datatype, string}
@@ -102,14 +107,19 @@ end}.
 ]}.
 
 {translation, "emq_auth_mongo.super_query", fun(Conf) ->
-  Collection = cuttlefish:conf_get("auth.mongo.super_query.collection", Conf),
-  SuperField = cuttlefish:conf_get("auth.mongo.super_query.super_field", Conf),
-  Selector = cuttlefish:conf_get("auth.mongo.super_query.selector", Conf),
-  [{collection, Collection},
-  {super_field, SuperField},
-  {selector, Selector}
-]
+  case cuttlefish:conf_get("auth.mongo.super_query", Conf) of
+    false -> undefined;
+    true  -> Collection = cuttlefish:conf_get("auth.mongo.super_query.collection", Conf),
+             SuperField = cuttlefish:conf_get("auth.mongo.super_query.super_field", Conf),
+             Selector = cuttlefish:conf_get("auth.mongo.super_query.selector", Conf),
+             [{collection, Collection}, {super_field, SuperField}, {selector, Selector}]
+  end
 end}.
+
+{mapping, "auth.mongo.acl_query", "emq_auth_mongo.acl_query", [
+  {default, off},
+  {datatype, flag}
+]}.
 
 {mapping, "auth.mongo.acl_query.collection", "emq_auth_mongo.acl_query", [
   {default, "mqtt_user"},
@@ -122,11 +132,12 @@ end}.
 ]}.
 
 {translation, "emq_auth_mongo.acl_query", fun(Conf) ->
-  Collection = cuttlefish:conf_get("auth.mongo.acl_query.collection", Conf),
-  Selector = cuttlefish:conf_get("auth.mongo.acl_query.selector", Conf),
-  [{collection, Collection},
-  {selector, Selector}
-]
+  case cuttlefish:conf_get("auth.mongo.acl_query", Conf) of
+    false -> undefined;
+    true  -> Collection = cuttlefish:conf_get("auth.mongo.acl_query.collection", Conf),
+             Selector = cuttlefish:conf_get("auth.mongo.acl_query.selector", Conf),
+             [{collection, Collection}, {selector, Selector}]
+  end
 end}.
 
 {mapping, "auth.mongo.acl_nomatch", "emq_auth_mongo.acl_nomatch", [
