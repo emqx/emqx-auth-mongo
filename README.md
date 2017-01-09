@@ -49,7 +49,7 @@ auth.mongo.superquery.super_field = is_superuser
 auth.mongo.superquery.selector = username=%u
 
 ## aclquery
-auth.mongo.aclquery.collection = mqtt_user
+auth.mongo.aclquery.collection = mqtt_acl
 
 auth.mongo.aclquery.selector = username=%u
 
