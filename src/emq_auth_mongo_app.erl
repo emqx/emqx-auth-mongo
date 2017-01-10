@@ -28,13 +28,13 @@
 -export([start/2, prep_stop/1, stop/1]).
 
 %%--------------------------------------------------------------------
-%% Application callbacks
+%% Application Callbacks
 %%--------------------------------------------------------------------
 
 start(_StartType, _StartArgs) ->
     {ok, Sup} = emq_auth_mongo_sup:start_link(),
-    if_enabled(auth_query, fun reg_authmod/1),
-    if_enabled(acl_query,  fun reg_aclmod/1),
+    with_env(auth_query, fun reg_authmod/1),
+    with_env(acl_query,  fun reg_aclmod/1),
     {ok, Sup}.
 
 prep_stop(State) ->
@@ -57,13 +57,11 @@ reg_aclmod(AclQuery) ->
 %% Internal Functions
 %%--------------------------------------------------------------------
 
-if_enabled(Name, Fun) ->
+with_env(Name, Fun) ->
     case application:get_env(?APP, Name) of
-        {ok, Config} -> Fun(r(Name, Config));
-        undefined    -> ok
+        undefined    -> ok;
+        {ok, Config} -> Fun(r(Name, Config))
     end.
-
-r(_, undefined) -> undefined;
 
 r(super_query, Config) ->
     #superquery{collection = list_to_binary(get_value(collection, Config, "mqtt_user")),
@@ -85,5 +83,4 @@ parse_selector(Selector) ->
         [Field, Val] -> {list_to_binary(Field), list_to_binary(Val)};
         _ -> {<<"username">>, <<"%u">>}
     end.
-
 
