@@ -108,7 +108,7 @@ end}.
 
 {translation, "emq_auth_mongo.super_query", fun(Conf) ->
   case cuttlefish:conf_get("auth.mongo.super_query", Conf) of
-    false -> undefined;
+    false -> cuttlefish:unset();
     true  -> Collection = cuttlefish:conf_get("auth.mongo.super_query.collection", Conf),
              SuperField = cuttlefish:conf_get("auth.mongo.super_query.super_field", Conf),
              Selector = cuttlefish:conf_get("auth.mongo.super_query.selector", Conf),
@@ -133,7 +133,7 @@ end}.
 
 {translation, "emq_auth_mongo.acl_query", fun(Conf) ->
   case cuttlefish:conf_get("auth.mongo.acl_query", Conf) of
-    false -> undefined;
+    false -> cuttlefish:unset();
     true  -> Collection = cuttlefish:conf_get("auth.mongo.acl_query.collection", Conf),
              Selector = cuttlefish:conf_get("auth.mongo.acl_query.selector", Conf),
              [{collection, Collection}, {selector, Selector}]
