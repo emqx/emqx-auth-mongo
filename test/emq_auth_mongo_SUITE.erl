@@ -31,7 +31,7 @@
                    {<<"username">>, <<"user3">>, <<"clientid">>, <<"null">>, <<"publish">>, [<<"a/b/c">>]}]).
 
 -define(INIT_AUTH, [{<<"username">>, <<"test">>, <<"password">>, <<"testpwd">>, <<"is_superuser">>, false},
-                    {<<"username">>, <<"root">>,  <<"is_superuser">>, true}]).
+                    {<<"username">>, <<"root">>, <<"password">>, <<"admin">>, <<"is_superuser">>, true}]).
 
 all() -> 
     [{group, emq_auth_mongo}].
@@ -69,12 +69,12 @@ check_acl(Config) ->
     3 = mc_worker_api:count(Connection, Collection, {}),
     %% ct log output
     %%ct_log(Connection, Collection, User1),
-    deny = emqttd_access_control:check_acl(User1, subscribe, <<"users/testuser/1">>),
+    allow = emqttd_access_control:check_acl(User1, subscribe, <<"users/testuser/1">>),
     deny = emqttd_access_control:check_acl(User1, subscribe, <<"$SYS/testuser/1">>),
     deny = emqttd_access_control:check_acl(User2, subscribe, <<"a/b/c">>),
-    deny = emqttd_access_control:check_acl(User2, subscribe, <<"$SYS/testuser/1">>),
-    deny = emqttd_access_control:check_acl(User3, publish, <<"a/b/c">>),
-    deny= emqttd_access_control:check_acl(User3, publish, <<"c">>),
+    allow = emqttd_access_control:check_acl(User2, subscribe, <<"$SYS/testuser/1">>),
+    allow = emqttd_access_control:check_acl(User3, publish, <<"a/b/c">>),
+    deny = emqttd_access_control:check_acl(User3, publish, <<"c">>),
     allow = emqttd_access_control:check_acl(User4, publish, <<"a/b/c">>),
     mc_worker_api:delete(Connection, Collection, {}).
 
@@ -88,9 +88,9 @@ check_auth(Config) ->
     User1 = #mqtt_client{client_id = <<"client1">>, username = <<"test">>},
     User2 = #mqtt_client{client_id = <<"client2">>, username = <<"root">>},
     User3 = #mqtt_client{client_id = <<"client3">>},
-    {error, notfound}= emqttd_access_control:auth(User1, <<"testpwd">>),
+    {ok, false}= emqttd_access_control:auth(User1, <<"testpwd">>),
     {error, _} = emqttd_access_control:auth(User1, <<"pwderror">>),
-    {error, notfound} = emqttd_access_control:auth(User2, <<"pass">>),
+    {ok, true} = emqttd_access_control:auth(User2, <<"admin">>),
     {error, username_or_password_undefined }= emqttd_access_control:auth(User2, <<>>),
     {error, username_or_password_undefined} = emqttd_access_control:auth(User3, <<>>),
     mc_worker_api:delete(Connection, Collection, {}).
