@@ -30,8 +30,8 @@
                    {<<"username">>, <<"dashboard">>, <<"clientid">>, <<"null">>, <<"pubsub">>, [<<"$SYS/#">>]},
                    {<<"username">>, <<"user3">>, <<"clientid">>, <<"null">>, <<"publish">>, [<<"a/b/c">>]}]).
 
--define(INIT_AUTH, [{<<"username">>, <<"test">>, <<"password">>, <<"testpwd">>, <<"is_superuser">>, false},
-                    {<<"username">>, <<"root">>, <<"password">>, <<"admin">>, <<"is_superuser">>, true}]).
+-define(INIT_AUTH, [{<<"username">>, <<"test">>, <<"password">>, <<"b95de58f7646da3b2de64466b3429244885addac">>, <<"salt">>, <<"salt">>, <<"is_superuser">>, false},
+                    {<<"username">>, <<"root">>, <<"password">>, <<"3ef26c7a285bbfdebd8ebe895dbada207d926c15">>, <<"salt">>, <<"salt">>, <<"is_superuser">>, true}]).
 
 all() -> 
     [{group, emq_auth_mongo}].
@@ -88,9 +88,9 @@ check_auth(Config) ->
     User1 = #mqtt_client{client_id = <<"client1">>, username = <<"test">>},
     User2 = #mqtt_client{client_id = <<"client2">>, username = <<"root">>},
     User3 = #mqtt_client{client_id = <<"client3">>},
-    {ok, false}= emqttd_access_control:auth(User1, <<"testpwd">>),
+	{ok, false} = emqttd_access_control:auth(User1, <<"test">>),
     {error, _} = emqttd_access_control:auth(User1, <<"pwderror">>),
-    {ok, true} = emqttd_access_control:auth(User2, <<"admin">>),
+	{ok, true} = emqttd_access_control:auth(User2, <<"test1">>),
     {error, username_or_password_undefined }= emqttd_access_control:auth(User2, <<>>),
     {error, username_or_password_undefined} = emqttd_access_control:auth(User3, <<>>),
     mc_worker_api:delete(Connection, Collection, {}).
