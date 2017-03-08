@@ -48,7 +48,6 @@ check(Client, Password, #state{authquery = AuthQuery, superquery = SuperQuery}) 
                hash = HashType, selector = Selector} = AuthQuery,
     Selector1 = replvar(Selector, Client),
     UserMap = query(Collection, Selector1),
-    io:format("~p~p~n",[UserMap,Fields]),
 	Result = case [maps:get(Field, UserMap, undefined) || Field <- Fields] of
                 [undefined|_] -> {error, notfound};
                 [PassHash,undefined|_] -> check_pass(PassHash, Password, HashType);
