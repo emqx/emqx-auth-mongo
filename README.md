@@ -35,9 +35,26 @@ auth.mongo.database = mqtt
 ## authquery
 auth.mongo.authquery.collection = mqtt_user
 
+## password field: password or password salt
 auth.mongo.authquery.password_field = password
 
+## Password hash: plain, md5, sha, sha256, pbkdf2
 auth.mongo.authquery.password_hash = sha256
+
+## sha256 with salt suffix
+## auth.mongo.password_hash = sha256 salt
+
+## sha256 with salt suffix
+## auth.mongo.password_hash = salt sha256
+
+## pbkdf2 with macfun: md4, md5, ripemd160, sha, sha224, sha256, sha384, sha512
+## auth.mongo.pbkdf2_macfun = sha256
+
+## pbkdf2 with iterations
+## auth.mongo.pbkdf2_iterations = 4096
+
+## pbkdf2 with dklen
+## auth.mongo.pbkdf2_dklen = 20
 
 auth.mongo.authquery.selector = username=%u
 
