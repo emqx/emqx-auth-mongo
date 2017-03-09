@@ -49,7 +49,7 @@ check(Client, Password, #state{authquery = AuthQuery, superquery = SuperQuery}) 
     Selector1 = replvar(Selector, Client),
     UserMap = query(Collection, Selector1),
 	Result = case [maps:get(Field, UserMap, undefined) || Field <- Fields] of
-                [undefined|_] -> {error, notfound};
+                [undefined] -> {error, notfound};
                 [PassHash] -> check_pass(PassHash, Password, HashType);
                 [PassHash,Salt|_] -> check_pass(PassHash,Salt,Password,HashType)
              end,
