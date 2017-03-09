@@ -99,6 +99,7 @@ mqtt_user Collection
 {
     username: "user",
     password: "password hash",
+    salt: "password salt",
     is_superuser: boolean (true, false),
     created: "datetime"
 }
