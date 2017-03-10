@@ -64,8 +64,7 @@ end}.
 ]}.
 
 {mapping, "auth.mongo.auth_query.password_hash", "emq_auth_mongo.auth_query", [
-  {default, sha256},
-  {datatype, {enum, [plain, md5, sha, sha256, pbkdf2]}}
+  {datatype, string}
 ]}.
 
 {mapping, "auth.mongo.auth_query.selector", "emq_auth_mongo.auth_query", [
@@ -78,10 +77,18 @@ end}.
   PasswordField = cuttlefish:conf_get("auth.mongo.auth_query.password_field", Conf),
   PasswordHash = cuttlefish:conf_get("auth.mongo.auth_query.password_hash", Conf),
   Selector = cuttlefish:conf_get("auth.mongo.auth_query.selector", Conf),
+  PasswordFields = [list_to_binary(Field) || Field <- string:tokens(PasswordField, " ")],
+  HashValue =
+    case string:tokens(PasswordHash, " ") of
+          [Hash]           -> list_to_atom(Hash);
+          [Prefix, Suffix] -> {list_to_atom(Prefix), list_to_atom(Suffix)};
+          [Hash, MacFun, Iterations, Dklen] -> {list_to_atom(Hash), list_to_atom(MacFun), list_to_integer(Iterations), list_to_integer(Dklen)};
+          _                -> plain
+    end,
   [{collection, Collection},
-  {password_field, PasswordField},
+  {password_field, PasswordFields},
   %% Hash Algorithm: plain, md5, sha, sha256, pbkdf2?
-  {password_hash, PasswordHash},
+  {password_hash, HashValue},
   {selector, Selector}
 ]
 end}.
