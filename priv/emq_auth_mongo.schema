@@ -80,12 +80,10 @@ end}.
   {datatype, integer}
 ]}.
 
-
 {mapping, "auth.mongo.auth_query.selector", "emq_auth_mongo.auth_query", [
   {default, ""},
   {datatype, string}
 ]}.
-
 
 {translation, "emq_auth_mongo.auth_query", fun(Conf) ->
   Collection = cuttlefish:conf_get("auth.mongo.auth_query.collection", Conf),
