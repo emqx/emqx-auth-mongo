@@ -46,13 +46,18 @@ check(#mqtt_client{username = Username}, Password, _State) when ?EMPTY(Username)
 check(Client, Password, #state{authquery = AuthQuery, superquery = SuperQuery}) ->
     #authquery{collection = Collection, field = Field,
                hash = HashType, selector = Selector} = AuthQuery,
-    Selector1 = replvar(Selector, Client),
-    UserMap = query(Collection, Selector1),
-    Result = case maps:get(Field, UserMap, undefined) of
-                undefined -> ignore;
-                PassHash  -> check_pass(PassHash, Password, HashType)
-             end,
-    case Result of ok -> {ok, is_superuser(SuperQuery, Client)}; Error -> Error end.
+    case query(Collection, replvar(Selector, Client)) of
+        undefined -> ignore;
+        UserMap ->
+            case maps:get(Field, UserMap) of
+                #{} -> {error, password_error};
+                PassHash  -> 
+                    case check_pass(PassHash, Password, HashType) of
+                        ok -> {ok, is_superuser(SuperQuery, Client)};
+                        Error -> Error
+                    end
+             end
+    end.
 
 check_pass(PassHash, Password, HashType) ->
     case PassHash =:= hash(HashType, Password) of

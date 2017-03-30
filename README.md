@@ -53,9 +53,6 @@ auth.mongo.aclquery.collection = mqtt_acl
 
 auth.mongo.aclquery.selector = username=%u
 
-## acl_nomatch
-auth.mongo.acl_nomatch = deny
-
 ```
 
 Load the Plugin
