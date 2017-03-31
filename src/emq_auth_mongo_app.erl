@@ -70,7 +70,7 @@ r(super_query, Config) ->
 
 r(auth_query, Config) ->
     #authquery{collection = list_to_binary(get_value(collection, Config, "mqtt_user")),
-               field      = list_to_binary(get_value(password_field, Config, "password")),
+               field      = get_value(password_field, Config, "password"),
                hash       = get_value(password_hash, Config, sha256),
                selector   = parse_selector(get_value(selector, Config, {"username", "%u"}))};
 
