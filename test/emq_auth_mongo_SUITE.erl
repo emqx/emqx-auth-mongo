@@ -84,9 +84,9 @@ check_auth(Config) ->
     User1 = #mqtt_client{client_id = <<"client1">>, username = <<"test">>},
     User2 = #mqtt_client{client_id = <<"client2">>, username = <<"root">>},
     User3 = #mqtt_client{client_id = <<"client3">>},
-	{ok, false} = emqttd_access_control:auth(User1, <<"test">>),
+    {ok, false} = emqttd_access_control:auth(User1, <<"test">>),
     {error, _} = emqttd_access_control:auth(User1, <<"pwderror">>),
-	{ok, true} = emqttd_access_control:auth(User2, <<"test1">>),
+    {ok, true} = emqttd_access_control:auth(User2, <<"test1">>),
     {error, username_or_password_undefined }= emqttd_access_control:auth(User2, <<>>),
     {error, username_or_password_undefined} = emqttd_access_control:auth(User3, <<>>),
     mc_worker_api:delete(Connection, Collection, {}).
