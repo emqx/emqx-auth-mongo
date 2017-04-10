@@ -35,9 +35,21 @@ auth.mongo.database = mqtt
 ## authquery
 auth.mongo.authquery.collection = mqtt_user
 
-auth.mongo.authquery.password_field = password
+## password_field: password or password salt
+auth.mongo.auth_query.password_field = password
 
-auth.mongo.authquery.password_hash = sha256
+## Password hash: plain, md5, sha, sha256
+auth.mongo.auth_query.password_hash = sha256
+
+## sha256 with salt suffix
+## auth.mongo.auth_query.password_hash = sha256 salt
+
+## sha256 with salt suffix
+## auth.mongo.auth_query.password_hash = salt sha256
+
+## pbkdf2 with macfun iterations dklen
+## macfun: md4, md5, ripemd160, sha, sha224, sha256, sha384, sha512
+## auth.mongo.auth_query.password_hash = pbkdf2 sha256 1000 20
 
 auth.mongo.authquery.selector = username=%u
 
@@ -79,6 +91,7 @@ mqtt_user Collection
 {
     username: "user",
     password: "password hash",
+    salt: "password salt",
     is_superuser: boolean (true, false),
     created: "datetime"
 }
@@ -86,7 +99,7 @@ mqtt_user Collection
 
 For example:
 ```
-db.mqtt_user.insert({username: "test", password: "password hash", is_superuser: false})
+db.mqtt_user.insert({username: "test", password: "password hash", salt: "password salt", is_superuser: false})
 db.mqtt_user:insert({username: "root", is_superuser: true})
 ```
 

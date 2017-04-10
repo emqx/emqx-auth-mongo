@@ -30,8 +30,8 @@
                    {<<"username">>, <<"dashboard">>, <<"clientid">>, <<"null">>, <<"pubsub">>, [<<"$SYS/#">>]},
                    {<<"username">>, <<"user3">>, <<"clientid">>, <<"null">>, <<"publish">>, [<<"a/b/c">>]}]).
 
--define(INIT_AUTH, [{<<"username">>, <<"test">>, <<"password">>, <<"testpwd">>, <<"is_superuser">>, false},
-                    {<<"username">>, <<"root">>, <<"password">>, <<"admin">>, <<"is_superuser">>, true}]).
+-define(INIT_AUTH, [{<<"username">>, <<"test">>, <<"password">>, <<"b95de58f7646da3b2de64466b3429244885addac">>, <<"salt">>, <<"salt">>, <<"is_superuser">>, false},
+                    {<<"username">>, <<"root">>, <<"password">>, <<"3ef26c7a285bbfdebd8ebe895dbada207d926c15">>, <<"salt">>, <<"salt">>, <<"is_superuser">>, true}]).
 
 all() -> 
     [{group, emq_auth_mongo}].
@@ -43,16 +43,12 @@ groups() ->
 
 init_per_suite(Config) ->
     DataDir = proplists:get_value(data_dir, Config),
-    application:start(lager),
-    peg_com(DataDir),
     [start_apps(App, DataDir) || App <- [emqttd, emq_auth_mongo]],
     {ok, Connection} = ecpool_worker:client(gproc_pool:pick_worker({ecpool, emq_auth_mongo})),
     [{connection, Connection} | Config].
 
 end_per_suite(_Config) ->
     application:stop(emq_auth_mongo),
-    application:stop(ecpool),
-    application:stop(mongodb),
     application:stop(emqttd),
     emqttd_mnesia:ensure_stopped().
 
@@ -88,9 +84,9 @@ check_auth(Config) ->
     User1 = #mqtt_client{client_id = <<"client1">>, username = <<"test">>},
     User2 = #mqtt_client{client_id = <<"client2">>, username = <<"root">>},
     User3 = #mqtt_client{client_id = <<"client3">>},
-    {ok, false}= emqttd_access_control:auth(User1, <<"testpwd">>),
+    {ok, false} = emqttd_access_control:auth(User1, <<"test">>),
     {error, _} = emqttd_access_control:auth(User1, <<"pwderror">>),
-    {ok, true} = emqttd_access_control:auth(User2, <<"admin">>),
+    {ok, true} = emqttd_access_control:auth(User2, <<"test1">>),
     {error, username_or_password_undefined }= emqttd_access_control:auth(User2, <<>>),
     {error, username_or_password_undefined} = emqttd_access_control:auth(User3, <<>>),
     mc_worker_api:delete(Connection, Collection, {}).
@@ -128,24 +124,4 @@ start_apps(App, DataDir) ->
     Vals = proplists:get_value(App, NewConfig),
     [application:set_env(App, Par, Value) || {Par, Value} <- Vals],
     application:ensure_all_started(App).
-
-peg_com(DataDir) ->
-    ParsePeg = file2(3, DataDir, "conf_parse.peg"),
-    neotoma:file(ParsePeg),
-    ParseErl = file2(3, DataDir, "conf_parse.erl"),
-    compile:file(ParseErl, []),
-
-    DurationPeg = file2(3, DataDir, "cuttlefish_duration_parse.peg"),
-    neotoma:file(DurationPeg),
-    DurationErl = file2(3, DataDir, "cuttlefish_duration_parse.erl"),
-    compile:file(DurationErl, []).
-    
-
-file2(Times, Dir, FileName) when Times < 1 ->
-    filename:join([Dir, "deps", "cuttlefish","src", FileName]);
-
-file2(Times, Dir, FileName) ->
-    Dir1 = filename:dirname(Dir),
-    file2(Times - 1, Dir1, FileName).
-
 
