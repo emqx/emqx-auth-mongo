@@ -1,6 +1,6 @@
 PROJECT = emq_auth_mongo
 PROJECT_DESCRIPTION = Authentication/ACL with MongoDB
-PROJECT_VERSION = 2.1.1
+PROJECT_VERSION = 2.1.2
 
 DEPS = mongodb ecpool
 
