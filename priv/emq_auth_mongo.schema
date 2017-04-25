@@ -146,9 +146,3 @@ end}.
              [{collection, Collection}, {selector, Selector}]
   end
 end}.
-
-{mapping, "auth.mongo.acl_nomatch", "emq_auth_mongo.acl_nomatch", [
-  {default, deny},
-  {datatype, {enum, [deny, allow]}}
-]}.
-
