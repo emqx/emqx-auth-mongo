@@ -38,14 +38,17 @@ auth.mongo.authquery.collection = mqtt_user
 ## password_field: password or password salt
 auth.mongo.auth_query.password_field = password
 
-## Password hash: plain, md5, sha, sha256
+## Password hash: plain, md5, sha, sha256, bcrypt
 auth.mongo.auth_query.password_hash = sha256
 
 ## sha256 with salt suffix
 ## auth.mongo.auth_query.password_hash = sha256 salt
 
-## sha256 with salt suffix
+## sha256 with salt prefix
 ## auth.mongo.auth_query.password_hash = salt sha256
+
+## bcrypt with salt prefix
+## auth.mongo.auth_query.password_hash = salt bcrypt
 
 ## pbkdf2 with macfun iterations dklen
 ## macfun: md4, md5, ripemd160, sha, sha224, sha256, sha384, sha512
@@ -64,9 +67,6 @@ auth.mongo.superquery.selector = username=%u
 auth.mongo.aclquery.collection = mqtt_acl
 
 auth.mongo.aclquery.selector = username=%u
-
-## acl_nomatch
-auth.mongo.acl_nomatch = deny
 
 ```
 
