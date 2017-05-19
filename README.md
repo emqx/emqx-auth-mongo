@@ -56,17 +56,17 @@ auth.mongo.auth_query.password_hash = sha256
 
 auth.mongo.authquery.selector = username=%u
 
-## superquery
-auth.mongo.superquery.collection = mqtt_user
+## super_query
+auth.mongo.super_query.collection = mqtt_user
 
-auth.mongo.superquery.super_field = is_superuser
+auth.mongo.super_query.super_field = is_superuser
 
-auth.mongo.superquery.selector = username=%u
+auth.mongo.super_query.selector = username=%u
 
-## aclquery
-auth.mongo.aclquery.collection = mqtt_acl
+## acl_query
+auth.mongo.acl_query.collection = mqtt_acl
 
-auth.mongo.aclquery.selector = username=%u
+auth.mongo.acl_query.selector = username=%u
 
 ```
 
