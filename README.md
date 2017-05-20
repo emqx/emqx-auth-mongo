@@ -2,7 +2,7 @@
 emq_auth_mongo
 ==============
 
-Authentication with MongoDB
+Authentication, ACL with MongoDB
 
 Build the Plugin
 ----------------
