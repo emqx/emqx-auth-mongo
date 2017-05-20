@@ -2,7 +2,7 @@
 emq_auth_mongo
 ==============
 
-Authentication with MongoDB
+Authentication, ACL with MongoDB
 
 Build the Plugin
 ----------------
@@ -24,16 +24,16 @@ auth.mongo.server = 127.0.0.1:27017
 auth.mongo.pool = 8
 
 ## Mongo User
-## auth.mongo.login = 
+## auth.mongo.login =
 
 ## Mongo Password
-## auth.mongo.password = 
+## auth.mongo.password =
 
 ## Mongo Database
 auth.mongo.database = mqtt
 
-## authquery
-auth.mongo.authquery.collection = mqtt_user
+## auth_query
+auth.mongo.auth_query.collection = mqtt_user
 
 ## password_field: password or password salt
 auth.mongo.auth_query.password_field = password
@@ -54,19 +54,23 @@ auth.mongo.auth_query.password_hash = sha256
 ## macfun: md4, md5, ripemd160, sha, sha224, sha256, sha384, sha512
 ## auth.mongo.auth_query.password_hash = pbkdf2 sha256 1000 20
 
-auth.mongo.authquery.selector = username=%u
+auth.mongo.auth_query.selector = username=%u
 
-## superquery
-auth.mongo.superquery.collection = mqtt_user
+## super_query
+auth.mongo.super_query = on
 
-auth.mongo.superquery.super_field = is_superuser
+auth.mongo.super_query.collection = mqtt_user
 
-auth.mongo.superquery.selector = username=%u
+auth.mongo.super_query.super_field = is_superuser
 
-## aclquery
-auth.mongo.aclquery.collection = mqtt_acl
+auth.mongo.super_query.selector = username=%u
 
-auth.mongo.aclquery.selector = username=%u
+## acl_query
+auth.mongo.acl_query = on
+
+auth.mongo.acl_query.collection = mqtt_acl
+
+auth.mongo.acl_query.selector = username=%u
 
 ```
 
