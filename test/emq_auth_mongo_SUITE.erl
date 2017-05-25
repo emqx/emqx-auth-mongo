@@ -64,8 +64,8 @@ end_per_suite(Config) ->
     {ok, Connection} = ?POOL(?APP),
     AuthCollection = collection(authquery, Config),
     AclCollection = collection(aclquery, Config),
-    mc_worker_api:delete(Connection, AuthCollection, {}),
-    mc_worker_api:delete(Connection, AclCollection, {}),
+    mongo_api:delete(Connection, AuthCollection, {}),
+    mongo_api:delete(Connection, AclCollection, {}),
     application:stop(emq_auth_mongo),
     application:stop(emqttd).
 
@@ -73,8 +73,8 @@ check_auth(Config) ->
     {ok, Connection} = ?POOL(?APP),
     {ok, AppConfig} = application:get_env(emq_auth_mongo, auth_query),
     Collection = collection(authquery, AppConfig),
-    mc_worker_api:delete(Connection, Collection, {}),
-    mc_worker_api:insert(Connection, Collection, ?INIT_AUTH),
+    mongo_api:delete(Connection, Collection, {}),
+    mongo_api:insert(Connection, Collection, ?INIT_AUTH),
 
     Plain = #mqtt_client{client_id = <<"client1">>, username = <<"plain">>},
     Md5 = #mqtt_client{client_id = <<"md5">>, username = <<"md5">>},
@@ -112,13 +112,13 @@ check_acl(Config) ->
     {ok, Connection} = ?POOL(?APP),
     {ok, AppConfig} = application:get_env(?APP, acl_query),
     Collection = collection(aclquery, AppConfig),
-    mc_worker_api:delete(Connection, Collection, {}),
-    mc_worker_api:insert(Connection, Collection, ?INIT_ACL),
+    mongo_api:delete(Connection, Collection, {}),
+    mongo_api:insert(Connection, Collection, ?INIT_ACL),
     User1 = #mqtt_client{client_id = <<"client1">>, username = <<"testuser">>},
     User2 = #mqtt_client{client_id = <<"client2">>, username = <<"dashboard">>},
     User3 = #mqtt_client{client_id = <<"client2">>, username = <<"user3">>},
     User4 = #mqtt_client{client_id = <<"$$client2">>, username = <<"$$user3">>},
-    3 = mc_worker_api:count(Connection, Collection, {}),
+    3 = mongo_api:count(Connection, Collection, {}, 17),
     %% ct log output
     %%ct_log(Connection, Collection, User1),
     allow = emqttd_access_control:check_acl(User1, subscribe, <<"users/testuser/1">>),
@@ -174,7 +174,7 @@ find(Connection, Collection, Selector) ->
     find(Connection, Collection, Selector, #{}).
 
 find(Connection, Collection, Selector, Projector) ->
-    Cursor = mc_worker_api:find(Connection, Collection, Selector, #{projector => Projector}),
+    Cursor = mongo_api:find(Connection, Collection, Selector, #{projector => Projector}),
     Result = mc_cursor:rest(Cursor),
     mc_cursor:close(Cursor),
     Result.
