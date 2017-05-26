@@ -1,8 +1,19 @@
 %%-*- mode: erlang -*-
 %% emq_auth_mongo config mapping
+
+{mapping, "auth.mongo.type", "emq_auth_mongo.server", [
+  {default, single},
+  {datatype, {enum, [single, unknown, sharded, rs]}}
+]}.
+
+{mapping, "auth.mongo.rs_set_name", "emq_auth_mongo.server", [
+  {default, "mqtt"},
+  {datatype, string}
+]}.
+
 {mapping, "auth.mongo.server", "emq_auth_mongo.server", [
-  {default, {"127.0.0.1", 27017}},
-  {datatype, [integer, ip, string]}
+  {default, "127.0.0.1:27017"},
+  {datatype, string}
 ]}.
 
 {mapping, "auth.mongo.pool", "emq_auth_mongo.server", [
@@ -25,32 +36,73 @@
   {datatype, string}
 ]}.
 
+{mapping, "auth.mongo.w_mode", "emq_auth_mongo.server", [
+  {default, undef},
+  {datatype, {enum, [safe, unsafe, undef]}}
+]}.
+
+{mapping, "auth.mongo.r_mode", "emq_auth_mongo.server", [
+  {default, undef},
+  {datatype, {enum, [master, slave_ok, undef]}}
+]}.
+
+{mapping, "auth.mongo.topology.$name", "emq_auth_mongo.server", [
+  {datatype, integer}
+]}.
+
 {translation, "emq_auth_mongo.server", fun(Conf) ->
-  {MgHost, MgPort} =
-  case cuttlefish:conf_get("auth.mongo.server", Conf) of
-    {Ip, Port} -> {Ip, Port};
-    S          -> case string:tokens(S, ":") of
-                    [Domain]       -> {Domain, 27017};
-                    [Domain, Port] -> {Domain, list_to_integer(Port)}
-                  end
-    end,
+  H = cuttlefish:conf_get("auth.mongo.server", Conf),
+  Hosts = string:tokens(H, ","),
+  Type0 = cuttlefish:conf_get("auth.mongo.type", Conf),
   Pool = cuttlefish:conf_get("auth.mongo.pool", Conf),
   Login = cuttlefish:conf_get("auth.mongo.login", Conf),
   Passwd = cuttlefish:conf_get("auth.mongo.password", Conf),
   DB = cuttlefish:conf_get("auth.mongo.database", Conf),
+  R = cuttlefish:conf_get("auth.mongo.w_mode", Conf),
+  W = cuttlefish:conf_get("auth.mongo.r_mode", Conf),
   Login0 = case Login =:= [] of
     true -> [];
-    false -> [{login, Login}]
+    false -> [{login, list_to_binary(Login)}]
   end,
   Passwd0 = case Passwd =:= [] of
     true -> [];
-    false -> [{password, Passwd}]
+    false -> [{password, list_to_binary(Passwd)}]
   end,
-  [{pool_size, Pool},
-   {auto_reconnect, 1},
-   {host, MgHost},
-   {port, MgPort},
-   {database, DB}] ++ Login0 ++ Passwd0
+  W0 = case W =:= undef of
+    true -> [];
+    false -> [{w_mode, W}]
+  end,
+  R0 = case R =:= undef  of
+    true -> [];
+    false -> [{r_mode, R}]
+  end,
+  WorkerOptions = [{database, list_to_binary(DB)}] ++ Login0 ++ Passwd0 ++ W0 ++ R0,
+
+  Vars = cuttlefish_variable:fuzzy_matches(["auth", "mongo", "topology", "$name"], Conf),
+  Options = lists:map(fun({_, Name}) ->
+    Name2 = case Name of
+      "local_threshold_ms"          -> "localThresholdMS";
+      "connect_timeout_ms"          -> "connectTimeoutMS";
+      "socket_timeout_ms"           -> "socketTimeoutMS";
+      "server_selection_timeout_ms" -> "serverSelectionTimeoutMS";
+      "wait_queue_timeout_ms"       -> "waitQueueTimeoutMS";
+      "heartbeat_frequency_ms"      -> "heartbeatFrequencyMS";
+      "min_heartbeat_frequency_ms"  -> "minHeartbeatFrequencyMS";
+      _ -> Name
+    end,
+    {list_to_atom(Name2), cuttlefish:conf_get("auth.mongo.topology."++Name, Conf)}
+  end, Vars),
+
+  Type = case Type0 =:= rs of
+    true -> {Type0, list_to_binary(cuttlefish:conf_get("auth.mongo.rs_set_name", Conf))};
+    false -> Type0
+  end,
+  [{type, Type},
+    {hosts, Hosts},
+    {options, Options},
+    {worker_options, WorkerOptions},
+    {auto_reconnect, 1},
+    {pool_size, Pool}]
 end}.
 
 {mapping, "auth.mongo.auth_query.collection", "emq_auth_mongo.auth_query", [
