@@ -17,7 +17,13 @@ Configuration
 File: etc/emq_auth_mongo.conf
 
 ```erlang
-## Mongo Server
+## Mongo Topology Type single|unknown|sharded|rs
+auth.mongo.type = single
+
+## If type rs, need config setname
+## auth.mongo.rs_set_name =
+
+## Mongo Server 127.0.0.1:27017, 127.0.0.2:27017...
 auth.mongo.server = 127.0.0.1:27017
 
 ## Mongo Pool Size
@@ -31,6 +37,25 @@ auth.mongo.pool = 8
 
 ## Mongo Database
 auth.mongo.database = mqtt
+
+## Mongo Write Mode unsafe|safe
+## auth.mongo.w_mode =
+
+## Mongo Read Mode master|slave_ok
+## auth.mongo.r_mode =
+
+## Mongo Topology Options
+auth.mongo.topology.pool_size = 1
+auth.mongo.topology.max_overflow = 0
+## auth.mongo.topology.overflow_ttl = 1000
+## auth.mongo.topology.overflow_check_period = 1000
+## auth.mongo.topology.local_threshold_ms = 1000
+## auth.mongo.topology.connect_timeout_ms = 20000
+## auth.mongo.topology.socket_timeout_ms = 100
+## auth.mongo.topology.server_selection_timeout_ms = 30000
+## auth.mongo.topology.wait_queue_timeout_ms = 1000
+## auth.mongo.topology.heartbeat_frequency_ms = 10000
+## auth.mongo.topology.min_heartbeat_frequency_ms = 1000
 
 ## auth_query
 auth.mongo.auth_query.collection = mqtt_user
