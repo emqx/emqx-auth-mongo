@@ -105,23 +105,12 @@ replvar(Selector, _Client) ->
 %%--------------------------------------------------------------------
 
 connect(Opts) ->
-    mc_worker_api:connect(fixopt(Opts, [])).
-
-fixopt([], Acc) ->
-    Acc;
-
-fixopt([{login, Login} | Opts], Acc) when is_list(Login) ->
-    fixopt(Opts, [{login, list_to_binary(Login)} | Acc]);
-    
-fixopt([{password, Passwd} | Opts], Acc) when is_list(Passwd) ->
-    fixopt(Opts, [{password, list_to_binary(Passwd)} | Acc]);
-
-fixopt([{database, DB} | Opts], Acc) when is_list(DB) ->
-    fixopt(Opts, [{database, list_to_binary(DB)} | Acc]);
-
-fixopt([Opt | Opts], Acc) ->
-    fixopt(Opts, [Opt | Acc]).
+    Type = proplists:get_value(type, Opts, single),
+    Hosts = proplists:get_value(hosts, Opts, []),
+    Options = proplists:get_value(options, Opts, []),
+    WorkerOptions = proplists:get_value(worker_options, Opts, []),
+    mongo_api:connect(Type, Hosts, Options, WorkerOptions).
 
 query(Collection, Selector) ->
-    ecpool:with_client(?APP, fun(Conn) -> mc_worker_api:find_one(Conn, Collection, Selector) end).
+    ecpool:with_client(?APP, fun(Conn) -> mongo_api:find_one(Conn, Collection, Selector, #{}) end).
 
