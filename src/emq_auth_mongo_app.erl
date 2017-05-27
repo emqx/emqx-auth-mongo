@@ -62,6 +62,8 @@ with_env(Name, Fun) ->
         {ok, Config} -> Fun(r(Name, Config))
     end.
 
+r(super_query, undefined) -> 
+    undefined;
 r(super_query, Config) ->
     #superquery{collection = list_to_binary(get_value(collection, Config, "mqtt_user")),
                 field      = list_to_binary(get_value(super_field, Config, "is_superuser")),
