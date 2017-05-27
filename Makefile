@@ -4,7 +4,7 @@ PROJECT_VERSION = 2.2
 
 DEPS = mongodb ecpool
 
-dep_mongodb = git https://github.com/emqtt/mongodb-erlang v3.0.2
+dep_mongodb = git https://github.com/emqtt/mongodb-erlang v3.0.3
 dep_ecpool  = git https://github.com/emqtt/ecpool master
 
 BUILD_DEPS = emqttd cuttlefish
