@@ -77,6 +77,7 @@ check_auth(Config) ->
     mongo_api:insert(Connection, Collection, ?INIT_AUTH),
 
     Plain = #mqtt_client{client_id = <<"client1">>, username = <<"plain">>},
+    Plain1 = #mqtt_client{client_id = <<"client1">>, username = <<"plain2">>},
     Md5 = #mqtt_client{client_id = <<"md5">>, username = <<"md5">>},
     Sha = #mqtt_client{client_id = <<"sha">>, username = <<"sha">>},
     Sha256 = #mqtt_client{client_id = <<"sha256">>, username = <<"sha256">>},
@@ -84,7 +85,14 @@ check_auth(Config) ->
     Bcrypt = #mqtt_client{client_id = <<"bcrypt_foo">>, username = <<"bcrypt_foo">>},
     User1 = #mqtt_client{client_id = <<"bcrypt_foo">>, username = <<"user">>},
     reload({auth_query, [{password_hash, plain}]}),
+    %% With exactly username/password, connection success
     {ok, true} = emqttd_access_control:auth(Plain, <<"plain">>),
+    %% With exactly username and wrong password, connection fail
+    {error, password_error} = emqttd_access_control:auth(Plain, <<"error_pwd">>),
+    %% With wrong username and wrong password, emq_auth_mongo auth fail, then allow anonymous authentication
+    ok = emqttd_access_control:auth(Plain1, <<"error_pwd">>),
+    %% With wrong username and exactly password, emq_auth_mongo auth fail, then allow anonymous authentication
+    ok = emqttd_access_control:auth(Plain1, <<"plain">>),
     reload({auth_query, [{password_hash, md5}]}),
     {ok, false} = emqttd_access_control:auth(Md5, <<"md5">>),
     reload({auth_query, [{password_hash, sha}]}),
