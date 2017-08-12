@@ -35,6 +35,7 @@ start(_StartType, _StartArgs) ->
     {ok, Sup} = emq_auth_mongo_sup:start_link(),
     with_env(auth_query, fun reg_authmod/1),
     with_env(acl_query,  fun reg_aclmod/1),
+    emq_auth_mongo_config:register(),
     {ok, Sup}.
 
 prep_stop(State) ->
@@ -47,7 +48,8 @@ stop(_State) ->
 
 reg_authmod(AuthQuery) ->
     SuperQuery = r(super_query, application:get_env(?APP, super_query, undefined)),
-    emqttd_access_control:register_mod(auth, emq_auth_mongo, {AuthQuery, SuperQuery}).
+    emqttd_access_control:register_mod(auth, emq_auth_mongo, {AuthQuery, SuperQuery}),
+    emq_auth_mongo_config:unregister().
 
 reg_aclmod(AclQuery) ->
     emqttd_access_control:register_mod(acl, emq_acl_mongo, AclQuery).
