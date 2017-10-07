@@ -14,11 +14,11 @@
 %% limitations under the License.
 %%--------------------------------------------------------------------
 
--module(emq_auth_mongo_sup).
+-module(emqx_auth_mongo_sup).
 
 -behaviour(supervisor).
 
--include("emq_auth_mongo.hrl").
+-include("emqx_auth_mongo.hrl").
 
 %% API
 -export([start_link/0]).

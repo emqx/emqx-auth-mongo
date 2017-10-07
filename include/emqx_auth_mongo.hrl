@@ -1,5 +1,5 @@
 
--define(APP, emq_auth_mongo).
+-define(APP, emqx_auth_mongo).
 
 -record(superquery, {collection = <<"mqtt_user">>,
                      field      = <<"is_superuser">>,

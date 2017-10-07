@@ -1,56 +1,56 @@
 %%-*- mode: erlang -*-
-%% emq_auth_mongo config mapping
+%% emqx_auth_mongo config mapping
 
-{mapping, "auth.mongo.type", "emq_auth_mongo.server", [
+{mapping, "auth.mongo.type", "emqx_auth_mongo.server", [
   {default, single},
   {datatype, {enum, [single, unknown, sharded, rs]}}
 ]}.
 
-{mapping, "auth.mongo.rs_set_name", "emq_auth_mongo.server", [
+{mapping, "auth.mongo.rs_set_name", "emqx_auth_mongo.server", [
   {default, "mqtt"},
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.server", "emq_auth_mongo.server", [
+{mapping, "auth.mongo.server", "emqx_auth_mongo.server", [
   {default, "127.0.0.1:27017"},
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.pool", "emq_auth_mongo.server", [
+{mapping, "auth.mongo.pool", "emqx_auth_mongo.server", [
   {default, 8},
   {datatype, integer}
 ]}.
 
-{mapping, "auth.mongo.login", "emq_auth_mongo.server", [
+{mapping, "auth.mongo.login", "emqx_auth_mongo.server", [
   {default, ""},
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.password", "emq_auth_mongo.server", [
+{mapping, "auth.mongo.password", "emqx_auth_mongo.server", [
   {default, ""},
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.database", "emq_auth_mongo.server", [
+{mapping, "auth.mongo.database", "emqx_auth_mongo.server", [
   {default, "mqtt"},
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.w_mode", "emq_auth_mongo.server", [
+{mapping, "auth.mongo.w_mode", "emqx_auth_mongo.server", [
   {default, undef},
   {datatype, {enum, [safe, unsafe, undef]}}
 ]}.
 
-{mapping, "auth.mongo.r_mode", "emq_auth_mongo.server", [
+{mapping, "auth.mongo.r_mode", "emqx_auth_mongo.server", [
   {default, undef},
   {datatype, {enum, [master, slave_ok, undef]}}
 ]}.
 
-{mapping, "auth.mongo.topology.$name", "emq_auth_mongo.server", [
+{mapping, "auth.mongo.topology.$name", "emqx_auth_mongo.server", [
   {datatype, integer}
 ]}.
 
-{translation, "emq_auth_mongo.server", fun(Conf) ->
+{translation, "emqx_auth_mongo.server", fun(Conf) ->
   H = cuttlefish:conf_get("auth.mongo.server", Conf),
   Hosts = string:tokens(H, ","),
   Type0 = cuttlefish:conf_get("auth.mongo.type", Conf),
@@ -105,26 +105,26 @@
     {pool_size, Pool}]
 end}.
 
-{mapping, "auth.mongo.auth_query.collection", "emq_auth_mongo.auth_query", [
+{mapping, "auth.mongo.auth_query.collection", "emqx_auth_mongo.auth_query", [
   {default, "mqtt_user"},
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.auth_query.password_field", "emq_auth_mongo.auth_query", [
+{mapping, "auth.mongo.auth_query.password_field", "emqx_auth_mongo.auth_query", [
   {default, "password"},
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.auth_query.password_hash", "emq_auth_mongo.auth_query", [
+{mapping, "auth.mongo.auth_query.password_hash", "emqx_auth_mongo.auth_query", [
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.auth_query.selector", "emq_auth_mongo.auth_query", [
+{mapping, "auth.mongo.auth_query.selector", "emqx_auth_mongo.auth_query", [
   {default, ""},
   {datatype, string}
 ]}.
 
-{translation, "emq_auth_mongo.auth_query", fun(Conf) ->
+{translation, "emqx_auth_mongo.auth_query", fun(Conf) ->
   Collection = cuttlefish:conf_get("auth.mongo.auth_query.collection", Conf),
   PasswordField = cuttlefish:conf_get("auth.mongo.auth_query.password_field", Conf),
   PasswordHash = cuttlefish:conf_get("auth.mongo.auth_query.password_hash", Conf),
@@ -145,27 +145,27 @@ end}.
 ]
 end}.
 
-{mapping, "auth.mongo.super_query", "emq_auth_mongo.super_query", [
+{mapping, "auth.mongo.super_query", "emqx_auth_mongo.super_query", [
   {default, off},
   {datatype, flag}
 ]}.
 
-{mapping, "auth.mongo.super_query.collection", "emq_auth_mongo.super_query", [
+{mapping, "auth.mongo.super_query.collection", "emqx_auth_mongo.super_query", [
   {default, "mqtt_user"},
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.super_query.super_field", "emq_auth_mongo.super_query", [
+{mapping, "auth.mongo.super_query.super_field", "emqx_auth_mongo.super_query", [
   {default, "is_superuser"},
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.super_query.selector", "emq_auth_mongo.super_query", [
+{mapping, "auth.mongo.super_query.selector", "emqx_auth_mongo.super_query", [
   {default, ""},
   {datatype, string}
 ]}.
 
-{translation, "emq_auth_mongo.super_query", fun(Conf) ->
+{translation, "emqx_auth_mongo.super_query", fun(Conf) ->
   case cuttlefish:conf_get("auth.mongo.super_query", Conf) of
     false -> cuttlefish:unset();
     true  -> Collection = cuttlefish:conf_get("auth.mongo.super_query.collection", Conf),
@@ -175,22 +175,22 @@ end}.
   end
 end}.
 
-{mapping, "auth.mongo.acl_query", "emq_auth_mongo.acl_query", [
+{mapping, "auth.mongo.acl_query", "emqx_auth_mongo.acl_query", [
   {default, off},
   {datatype, flag}
 ]}.
 
-{mapping, "auth.mongo.acl_query.collection", "emq_auth_mongo.acl_query", [
+{mapping, "auth.mongo.acl_query.collection", "emqx_auth_mongo.acl_query", [
   {default, "mqtt_user"},
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.acl_query.selector", "emq_auth_mongo.acl_query", [
+{mapping, "auth.mongo.acl_query.selector", "emqx_auth_mongo.acl_query", [
   {default, ""},
   {datatype, string}
 ]}.
 
-{translation, "emq_auth_mongo.acl_query", fun(Conf) ->
+{translation, "emqx_auth_mongo.acl_query", fun(Conf) ->
   case cuttlefish:conf_get("auth.mongo.acl_query", Conf) of
     false -> cuttlefish:unset();
     true  -> Collection = cuttlefish:conf_get("auth.mongo.acl_query.collection", Conf),

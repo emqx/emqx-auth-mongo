@@ -13,7 +13,8 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%--------------------------------------------------------------------
--module (emq_auth_mongo_config).
+
+-module (emq_auth_mongo_cfg).
 
 -include("emq_auth_mongo.hrl").
 

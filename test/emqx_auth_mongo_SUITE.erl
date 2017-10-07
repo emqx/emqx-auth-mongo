@@ -14,19 +14,19 @@
 %% limitations under the License.
 %%--------------------------------------------------------------------
 
--module(emq_auth_mongo_SUITE).
+-module(emqx_auth_mongo_SUITE).
 
 -compile(export_all).
 
 -import(proplists, [get_value/3]).
 
--include_lib("emqttd/include/emqttd.hrl").
+-include_lib("emqx/include/emqx.hrl").
 
 -include_lib("common_test/include/ct.hrl").
 
 -include_lib("eunit/include/eunit.hrl").
 
--include("emq_auth_mongo.hrl").
+-include("emqx_auth_mongo.hrl").
 
 -define(POOL(App),  ecpool_worker:client(gproc_pool:pick_worker({ecpool, App}))).
 
@@ -43,22 +43,22 @@
                     ]).
 
 all() -> 
-    [{group, emq_auth_mongo_auth},
-     {group, emq_auth_mongo_acl},
+    [{group, emqx_auth_mongo_auth},
+     {group, emqx_auth_mongo_acl},
      {group, auth_mongo_config}
     ].
 
 groups() -> 
-    [{emq_auth_mongo_auth, [sequence],
+    [{emqx_auth_mongo_auth, [sequence],
      [check_auth, list_auth]},
-    {emq_auth_mongo_acl, [sequence],
+    {emqx_auth_mongo_acl, [sequence],
      [check_acl, acl_super]},
     {auth_mongo_config, [sequence], [server_config]}
     ].
 
 init_per_suite(Config) ->
     DataDir = proplists:get_value(data_dir, Config),
-    [start_apps(App, DataDir) || App <- [emqttd, emq_auth_mongo]],
+    [start_apps(App, DataDir) || App <- [emqttd, emqx_auth_mongo]],
     Config.
 
 end_per_suite(Config) ->
@@ -67,12 +67,12 @@ end_per_suite(Config) ->
     AclCollection = collection(aclquery, Config),
     mongo_api:delete(Connection, AuthCollection, {}),
     mongo_api:delete(Connection, AclCollection, {}),
-    application:stop(emq_auth_mongo),
+    application:stop(emqx_auth_mongo),
     application:stop(emqttd).
 
 check_auth(Config) ->
     {ok, Connection} = ?POOL(?APP),
-    {ok, AppConfig} = application:get_env(emq_auth_mongo, auth_query),
+    {ok, AppConfig} = application:get_env(emqx_auth_mongo, auth_query),
     Collection = collection(authquery, AppConfig),
     mongo_api:delete(Connection, Collection, {}),
     mongo_api:insert(Connection, Collection, ?INIT_AUTH),
@@ -87,35 +87,35 @@ check_auth(Config) ->
     User1 = #mqtt_client{client_id = <<"bcrypt_foo">>, username = <<"user">>},
     reload({auth_query, [{password_hash, plain}]}),
     %% With exactly username/password, connection success
-    {ok, true} = emqttd_access_control:auth(Plain, <<"plain">>),
+    {ok, true} = emqx_access_control:auth(Plain, <<"plain">>),
     %% With exactly username and wrong password, connection fail
-    {error, password_error} = emqttd_access_control:auth(Plain, <<"error_pwd">>),
-    %% With wrong username and wrong password, emq_auth_mongo auth fail, then allow anonymous authentication
-    ok = emqttd_access_control:auth(Plain1, <<"error_pwd">>),
-    %% With wrong username and exactly password, emq_auth_mongo auth fail, then allow anonymous authentication
-    ok = emqttd_access_control:auth(Plain1, <<"plain">>),
+    {error, password_error} = emqx_access_control:auth(Plain, <<"error_pwd">>),
+    %% With wrong username and wrong password, emqx_auth_mongo auth fail, then allow anonymous authentication
+    ok = emqx_access_control:auth(Plain1, <<"error_pwd">>),
+    %% With wrong username and exactly password, emqx_auth_mongo auth fail, then allow anonymous authentication
+    ok = emqx_access_control:auth(Plain1, <<"plain">>),
     reload({auth_query, [{password_hash, md5}]}),
-    {ok, false} = emqttd_access_control:auth(Md5, <<"md5">>),
+    {ok, false} = emqx_access_control:auth(Md5, <<"md5">>),
     reload({auth_query, [{password_hash, sha}]}),
-    {ok, false} = emqttd_access_control:auth(Sha, <<"sha">>),
+    {ok, false} = emqx_access_control:auth(Sha, <<"sha">>),
     reload({auth_query, [{password_hash, sha256}]}),
-    {ok, false} = emqttd_access_control:auth(Sha256, <<"sha256">>),
+    {ok, false} = emqx_access_control:auth(Sha256, <<"sha256">>),
     %%pbkdf2 sha
     reload({auth_query, [{password_hash, {pbkdf2, sha, 1, 16}}, {password_field, [<<"password">>, <<"salt">>]}]}),
-    {ok, false} = emqttd_access_control:auth(Pbkdf2, <<"password">>),
+    {ok, false} = emqx_access_control:auth(Pbkdf2, <<"password">>),
     reload({auth_query, [{password_hash, {salt, bcrypt}}]}),
-    {ok, false} = emqttd_access_control:auth(Bcrypt, <<"foo">>),
-    ok = emqttd_access_control:auth(User1, <<"foo">>).
+    {ok, false} = emqx_access_control:auth(Bcrypt, <<"foo">>),
+    ok = emqx_access_control:auth(User1, <<"foo">>).
 
 list_auth(_Config) ->
-    application:start(emq_auth_username),
-    emq_auth_username:add_user(<<"user1">>, <<"password1">>),
+    application:start(emqx_auth_username),
+    emqx_auth_username:add_user(<<"user1">>, <<"password1">>),
     User1 = #mqtt_client{client_id = <<"client1">>, username = <<"user1">>},
-    ok = emqttd_access_control:auth(User1, <<"password1">>),
+    ok = emqx_access_control:auth(User1, <<"password1">>),
     reload({auth_query, [{password_hash, plain}, {password_field, [<<"password">>]}]}),
     Plain = #mqtt_client{client_id = <<"client1">>, username = <<"plain">>},
-    {ok, true} = emqttd_access_control:auth(Plain, <<"plain">>),
-    application:stop(emq_auth_username).
+    {ok, true} = emqx_access_control:auth(Plain, <<"plain">>),
+    application:stop(emqx_auth_username).
 
 check_acl(Config) ->
     {ok, Connection} = ?POOL(?APP),
@@ -130,13 +130,13 @@ check_acl(Config) ->
     3 = mongo_api:count(Connection, Collection, {}, 17),
     %% ct log output
     %%ct_log(Connection, Collection, User1),
-    allow = emqttd_access_control:check_acl(User1, subscribe, <<"users/testuser/1">>),
-    deny = emqttd_access_control:check_acl(User1, subscribe, <<"$SYS/testuser/1">>),
-    deny = emqttd_access_control:check_acl(User2, subscribe, <<"a/b/c">>),
-    allow = emqttd_access_control:check_acl(User2, subscribe, <<"$SYS/testuser/1">>),
-    allow = emqttd_access_control:check_acl(User3, publish, <<"a/b/c">>),
-    deny = emqttd_access_control:check_acl(User3, publish, <<"c">>),
-    allow = emqttd_access_control:check_acl(User4, publish, <<"a/b/c">>).
+    allow = emqx_access_control:check_acl(User1, subscribe, <<"users/testuser/1">>),
+    deny = emqx_access_control:check_acl(User1, subscribe, <<"$SYS/testuser/1">>),
+    deny = emqx_access_control:check_acl(User2, subscribe, <<"a/b/c">>),
+    allow = emqx_access_control:check_acl(User2, subscribe, <<"$SYS/testuser/1">>),
+    allow = emqx_access_control:check_acl(User3, publish, <<"a/b/c">>),
+    deny = emqx_access_control:check_acl(User3, publish, <<"c">>),
+    allow = emqx_access_control:check_acl(User4, publish, <<"a/b/c">>).
 
 acl_super(_Config) ->
     reload({auth_query, [{password_hash, plain}]}),
@@ -170,8 +170,8 @@ comment_config(_) ->
     application:stop(?APP),
     [application:unset_env(?APP, Par) || Par <- [acl_query, auth_query]],
     application:start(?APP),
-    ?assertEqual([], emqttd_access_control:lookup_mods(auth)),
-    ?assertEqual([], emqttd_access_control:lookup_mods(acl)).
+    ?assertEqual([], emqx_access_control:lookup_mods(auth)),
+    ?assertEqual([], emqx_access_control:lookup_mods(acl)).
 
 server_config(_) ->
     Server =
@@ -210,22 +210,21 @@ server_config(_) ->
                      "acl_query.selector=username=%c"],
 
     lists:foreach(fun set_cmd/1, SetConfigKeys),
-    {ok, S} =  application:get_env(emq_auth_mongo, server),
-    {ok, A} =  application:get_env(emq_auth_mongo, auth_query),
-    {ok, Super} =  application:get_env(emq_auth_mongo, super_query),
-    {ok, Acl} =  application:get_env(emq_auth_mongo, acl_query),
+    {ok, S} =  application:get_env(emqx_auth_mongo, server),
+    {ok, A} =  application:get_env(emqx_auth_mongo, auth_query),
+    {ok, Super} =  application:get_env(emqx_auth_mongo, super_query),
+    {ok, Acl} =  application:get_env(emqx_auth_mongo, acl_query),
     ?assertEqual(lists:sort(Server), lists:sort(S)),
     ?assertEqual(lists:sort(Auth_query), lists:sort(A)),
     ?assertEqual(lists:sort(Super_query), lists:sort(Super)),
     ?assertEqual(lists:sort(Acl_query), lists:sort(Acl)).
 
 set_cmd(Key) ->
-    emqttd_cli_config:run(["config", "set", string:join(["auth.mongo", Key], "."), "--app=emq_auth_mongo"]).
-
+    emqx_cli_config:run(["config", "set", string:join(["auth.mongo", Key], "."), "--app=emqx_auth_mongo"]).
 
 ct_log(Connection, Collection, User1) ->
     Selector = {list_to_binary("username"), list_to_binary("%u")},
-    find(Connection, Collection, emq_auth_mongo:replvar(Selector, User1)).
+    find(Connection, Collection, emqx_auth_mongo:replvar(Selector, User1)).
    % ct:log("Got:~p", [Res]).
 
 %% @private

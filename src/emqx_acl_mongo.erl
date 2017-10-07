@@ -14,14 +14,13 @@
 %% limitations under the License.
 %%--------------------------------------------------------------------
 
-%% @doc ACL with MongoDB.
--module(emq_acl_mongo).
+-module(emqx_acl_mongo).
 
--behaviour(emqttd_acl_mod).
+-behaviour(emqx_acl_mod).
 
--include("emq_auth_mongo.hrl").
+-include("emqx_auth_mongo.hrl").
 
--include_lib("emqttd/include/emqttd.hrl").
+-include_lib("emqx/include/emqx.hrl").
 
 %% ACL callbacks
 -export([init/1, check_acl/2, reload_acl/1, description/0]).
@@ -36,7 +35,7 @@ check_acl({#mqtt_client{username = <<$$, _/binary>>}, _PubSub, _Topic}, _State) 
 
 check_acl({Client, PubSub, Topic}, #state{aclquery = AclQuery}) ->
     #aclquery{collection = Coll, selector = Selector} = AclQuery,
-    case emq_auth_mongo:query(Coll, emq_auth_mongo:replvar(Selector, Client)) of
+    case emqx_auth_mongo:query(Coll, emqx_auth_mongo:replvar(Selector, Client)) of
         undefined ->
             ignore;
         Row ->
@@ -49,7 +48,7 @@ check_acl({Client, PubSub, Topic}, #state{aclquery = AclQuery}) ->
 match(_Client, _Topic, []) ->
     nomatch;
 match(Client, Topic, [TopicFilter|More]) ->
-    case emqttd_topic:match(Topic, feedvar(Client, TopicFilter)) of
+    case emqx_topic:match(Topic, feedvar(Client, TopicFilter)) of
         true  -> matched;
         false -> match(Client, Topic, More)
     end.
