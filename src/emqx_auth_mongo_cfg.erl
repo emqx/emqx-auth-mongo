@@ -14,11 +14,11 @@
 %% limitations under the License.
 %%--------------------------------------------------------------------
 
--module (emq_auth_mongo_cfg).
+-module(emqx_auth_mongo_cfg).
 
--include("emq_auth_mongo.hrl").
+-export([register/0, unregister/0]).
 
--export ([register/0, unregister/0]).
+-define(APP, emqx_auth_mongo).
 
 %%--------------------------------------------------------------------
 %% API
