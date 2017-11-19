@@ -1,5 +1,5 @@
 
-emq_auth_mongo
+emq-auth-mongo
 ==============
 
 Authentication, ACL with MongoDB
@@ -132,7 +132,7 @@ mqtt_user Collection
 For example:
 ```
 db.mqtt_user.insert({username: "test", password: "password hash", salt: "password salt", is_superuser: false})
-db.mqtt_user:insert({username: "root", is_superuser: true})
+db.mqtt_user.insert({username: "root", is_superuser: true})
 ```
 
 mqtt_acl Collection
@@ -163,5 +163,5 @@ Apache License Version 2.0
 Author
 ------
 
-Feng Lee <feng@emqtt.io>
+EMQ X Team.
 
