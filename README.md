@@ -1,4 +1,3 @@
-
 emqx_auth_mongo
 ===============
 
@@ -132,7 +131,7 @@ mqtt_user Collection
 For example:
 ```
 db.mqtt_user.insert({username: "test", password: "password hash", salt: "password salt", is_superuser: false})
-db.mqtt_user:insert({username: "root", is_superuser: true})
+db.mqtt_user.insert({username: "root", is_superuser: true})
 ```
 
 mqtt_acl Collection
