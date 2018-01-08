@@ -15,35 +15,55 @@ Configuration
 
 File: etc/emqx_auth_mongo.conf
 
-```erlang
-## Mongo Topology Type single|unknown|sharded|rs
+```
+## MongoDB Topology Type.
+##
+## Value: single | unknown | sharded | rs
 auth.mongo.type = single
 
-## If type rs, need config setname
+## Sets the set name if type is rs.
+##
+## Value: String
 ## auth.mongo.rs_set_name =
 
-## Mongo Server 127.0.0.1:27017,127.0.0.2:27017...
+## MongoDB server list.
+##
+## Value: String
+##
+## Examples: 127.0.0.1:27017,127.0.0.2:27017...
 auth.mongo.server = 127.0.0.1:27017
 
-## Mongo Pool Size
+## MongoDB pool size
+##
+## Value: Number
 auth.mongo.pool = 8
 
-## Mongo User
+## MongoDB login user.
+##
+## Value: String
 ## auth.mongo.login =
 
-## Mongo Password
+## MongoDB password.
+##
+## Value: String
 ## auth.mongo.password =
 
-## Mongo Database
+## MongoDB database
+##
+## Value: String
 auth.mongo.database = mqtt
 
-## Mongo Write Mode unsafe|safe
+## MongoDB write mode.
+##
+## Value: unsafe | safe
 ## auth.mongo.w_mode =
 
-## Mongo Read Mode master|slave_ok
+## Mongo read mode.
+##
+## Value: master | slave_ok
 ## auth.mongo.r_mode =
 
-## Mongo Topology Options
+## MongoDB topology options.
 auth.mongo.topology.pool_size = 1
 auth.mongo.topology.max_overflow = 0
 ## auth.mongo.topology.overflow_ttl = 1000
@@ -56,13 +76,14 @@ auth.mongo.topology.max_overflow = 0
 ## auth.mongo.topology.heartbeat_frequency_ms = 10000
 ## auth.mongo.topology.min_heartbeat_frequency_ms = 1000
 
-## auth_query
+## Authentication query.
 auth.mongo.auth_query.collection = mqtt_user
 
-## password_field: password or password,salt
 auth.mongo.auth_query.password_field = password
 
-## Password hash: plain, md5, sha, sha256, bcrypt
+## Password hash.
+##
+## Value: plain | md5 | sha | sha256 | bcrypt
 auth.mongo.auth_query.password_hash = sha256
 
 ## sha256 with salt suffix
@@ -80,7 +101,7 @@ auth.mongo.auth_query.password_hash = sha256
 
 auth.mongo.auth_query.selector = username=%u
 
-## super_query
+## Enable superuser query.
 auth.mongo.super_query = on
 
 auth.mongo.super_query.collection = mqtt_user
@@ -89,13 +110,12 @@ auth.mongo.super_query.super_field = is_superuser
 
 auth.mongo.super_query.selector = username=%u
 
-## acl_query
+## Enable ACL query.
 auth.mongo.acl_query = on
 
 auth.mongo.acl_query.collection = mqtt_acl
 
 auth.mongo.acl_query.selector = username=%u
-
 ```
 
 Load the Plugin
