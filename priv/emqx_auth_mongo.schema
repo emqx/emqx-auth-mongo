@@ -36,24 +36,24 @@
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.ssl", "emq_auth_mongo.server", [
+{mapping, "auth.mongo.ssl", "emqx_auth_mongo.server", [
   {default, false},
   {datatype, {enum, [true, false]}}
 ]}.
 
-{mapping, "auth.mongo.ssl_opts.keyfile", "emq_auth_mongo.server", [
+{mapping, "auth.mongo.ssl_opts.keyfile", "emqx_auth_mongo.server", [
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.ssl_opts.certfile", "emq_auth_mongo.server", [
+{mapping, "auth.mongo.ssl_opts.certfile", "emqx_auth_mongo.server", [
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.ssl_opts.cacertfile", "emq_auth_mongo.server", [
+{mapping, "auth.mongo.ssl_opts.cacertfile", "emqx_auth_mongo.server", [
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.w_mode", "emq_auth_mongo.server", [
+{mapping, "auth.mongo.w_mode", "emqx_auth_mongo.server", [
   {default, undef},
   {datatype, {enum, [safe, unsafe, undef]}}
 ]}.
