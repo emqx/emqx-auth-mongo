@@ -36,7 +36,24 @@
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.w_mode", "emqx_auth_mongo.server", [
+{mapping, "auth.mongo.ssl", "emq_auth_mongo.server", [
+  {default, false},
+  {datatype, {enum, [true, false]}}
+]}.
+
+{mapping, "auth.mongo.ssl_opts.keyfile", "emq_auth_mongo.server", [
+  {datatype, string}
+]}.
+
+{mapping, "auth.mongo.ssl_opts.certfile", "emq_auth_mongo.server", [
+  {datatype, string}
+]}.
+
+{mapping, "auth.mongo.ssl_opts.cacertfile", "emq_auth_mongo.server", [
+  {datatype, string}
+]}.
+
+{mapping, "auth.mongo.w_mode", "emq_auth_mongo.server", [
   {default, undef},
   {datatype, {enum, [safe, unsafe, undef]}}
 ]}.
@@ -76,7 +93,19 @@
     true -> [];
     false -> [{r_mode, R}]
   end,
-  WorkerOptions = [{database, list_to_binary(DB)}] ++ Login0 ++ Passwd0 ++ W0 ++ R0,
+  Ssl = case cuttlefish:conf_get("auth.mongo.ssl", Conf) of
+    true ->
+      Filter  = fun(Opts) -> [{K, V} || {K, V} <- Opts, V =/= undefined] end,
+      SslOpts = fun(Prefix) ->
+                    Filter([{keyfile,    cuttlefish:conf_get(Prefix ++ ".keyfile", Conf, undefined)},
+                            {certfile,   cuttlefish:conf_get(Prefix ++ ".certfile", Conf, undefined)},
+                            {cacertfile, cuttlefish:conf_get(Prefix ++ ".cacertfile", Conf, undefined)}])
+                end,
+      [{ssl, true}, {ssl_opts, SslOpts("auth.mongo.ssl_opts")}];
+    false ->
+      []
+  end,
+  WorkerOptions = [{database, list_to_binary(DB)}] ++ Login0 ++ Passwd0 ++ W0 ++ R0 ++ Ssl,
 
   Vars = cuttlefish_variable:fuzzy_matches(["auth", "mongo", "topology", "$name"], Conf),
   Options = lists:map(fun({_, Name}) ->
