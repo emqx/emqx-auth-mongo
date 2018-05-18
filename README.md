@@ -49,6 +49,12 @@ auth.mongo.pool = 8
 ## Value: String
 ## auth.mongo.password =
 
+## MongoDB AuthSource
+##
+## Value: String
+## Default: mqtt
+## auth.mongo.auth_source = admin
+
 ## MongoDB database
 ##
 ## Value: String
