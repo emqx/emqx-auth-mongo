@@ -37,7 +37,7 @@ unregister() ->
 %% Get ENV Register formatter
 %%--------------------------------------------------------------------
 register_formatter() ->
-    [clique:register_formatter(cuttlefish_variable:tokenize(Key), 
+    [clique:register_formatter(cuttlefish_variable:tokenize(Key),
      fun formatter_callback/2) || Key <- keys()].
 
 formatter_callback([_, _, "server"], Params) ->
@@ -46,10 +46,12 @@ formatter_callback([_, _, "pool"], Params) ->
     proplists:get_value(pool_size, Params);
 formatter_callback([_, _, "database"], Params) ->
     proplists:get_value(database, proplists:get_value(worker_options, Params));
+formatter_callback([_, _, "auth_source"], Params) ->
+    proplists:get_value(auth_source, proplists:get_value(worker_options, Params));
 formatter_callback([_, _, "login"], Params) ->
     proplists:get_value(login, proplists:get_value(worker_options, Params));
 formatter_callback([_, _, "password"], Params) ->
-    proplists:get_value(password, proplists:get_value(worker_options, Params)); 
+    proplists:get_value(password, proplists:get_value(worker_options, Params));
 formatter_callback([_, _, Key], Params) ->
     proplists:get_value(list_to_atom(Key), Params);
 formatter_callback([_, _, _, "password_hash"], Params) ->
@@ -87,6 +89,12 @@ config_callback([_, _, "database"], Value) ->
     {ok, Env} = application:get_env(?APP, server),
     Env1 = proplists:get_value(worker_options, Env),
     Env2 = lists:keyreplace(database, 1, Env1, {database, list_to_binary(Value)}),
+    application:set_env(?APP, server, lists:keyreplace(worker_options, 1, Env, {worker_options, Env2})),
+    " successfully\n";
+config_callback([_, _, "auth_source"], Value) ->
+    {ok, Env} = application:get_env(?APP, server),
+    Env1 = proplists:get_value(worker_options, Env),
+    Env2 = lists:keyreplace(auth_source, 1, Env1, {auth_source, list_to_binary(Value)}),
     application:set_env(?APP, server, lists:keyreplace(worker_options, 1, Env, {worker_options, Env2})),
     " successfully\n";
 config_callback([_, _, "login"], Value) ->
@@ -146,6 +154,7 @@ keys() ->
      "auth.mongo.login",
      "auth.mongo.password",
      "auth.mongo.database",
+     "auth.mongo.auth_source",
      "auth.mongo.auth_query.collection",
      "auth.mongo.auth_query.password_field",
      "auth.mongo.auth_query.password_hash",
@@ -167,9 +176,9 @@ parse_password_hash(Value) ->
     case string:tokens(Value, ",") of
           [Hash]           -> list_to_atom(Hash);
           [Prefix, Suffix] -> {list_to_atom(Prefix), list_to_atom(Suffix)};
-          [Hash, MacFun, Iterations, Dklen] -> {list_to_atom(Hash), 
-                                                list_to_atom(MacFun), 
-                                                list_to_integer(Iterations), 
+          [Hash, MacFun, Iterations, Dklen] -> {list_to_atom(Hash),
+                                                list_to_atom(MacFun),
+                                                list_to_integer(Iterations),
                                                 list_to_integer(Dklen)};
           _                -> plain
     end.
