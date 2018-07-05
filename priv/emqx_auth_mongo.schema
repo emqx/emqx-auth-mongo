@@ -36,12 +36,12 @@
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.auth_source", "emq_auth_mongo.server", [
+{mapping, "auth.mongo.auth_source", "emqx_auth_mongo.server", [
   {default, "mqtt"},
   {datatype, string}
 ]}.
 
-{mapping, "auth.mongo.ssl", "emq_auth_mongo.server", [
+{mapping, "auth.mongo.ssl", "emqx_auth_mongo.server", [
   {default, false},
   {datatype, {enum, [true, false]}}
 ]}.
