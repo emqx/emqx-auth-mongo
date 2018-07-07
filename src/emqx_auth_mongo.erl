@@ -119,6 +119,9 @@ query(Collection, Selector) ->
     ecpool:with_client(?APP, fun(Conn) -> mongo_api:find_one(Conn, Collection, Selector, #{}) end).
 
 query_multi(Collection, SelectorList) ->
-    lists:map(fun(Selector) ->
-        query(Collection, Selector)
-    end, SelectorList).
+    lists:foldr(fun(Selector, Acc) ->
+        case query(Collection, Selector) of
+            undefined -> Acc;
+            Result -> [Result|Acc]
+        end
+    end, [], SelectorList).

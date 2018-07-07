@@ -40,7 +40,7 @@ check_acl({Client, PubSub, Topic}, #state{aclquery = AclQuery}) ->
             maps:from_list(emqx_auth_mongo:replvars(Selector, Client))
         end, SelectorList),
     case emqx_auth_mongo:query_multi(Coll, SelectorMapList) of
-        undefined ->
+        [] ->
             ignore;
         Rows ->
             case match(Client, Topic, topics(PubSub, Rows)) of
