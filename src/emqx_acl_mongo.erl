@@ -43,9 +43,13 @@ check_acl({Client, PubSub, Topic}, #state{aclquery = AclQuery}) ->
         [] ->
             ignore;
         Rows ->
-            case match(Client, Topic, topics(PubSub, Rows)) of
+            try match(Client, Topic, topics(PubSub, Rows)) of
                 matched -> allow;
                 nomatch -> deny
+            catch
+                ErrC:Err ->
+                    lager:error("check mongo (~p) ACL failed, got ACL config: ~p, error: {~p:~p}", [PubSub, Rows, ErrC, Err]),
+                    ignore
             end
     end.
 
