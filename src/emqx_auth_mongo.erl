@@ -26,7 +26,7 @@
 
 -behaviour(ecpool_worker).
 
--export([replvar/2, replvars/2, connect/1, query/2]).
+-export([replvar/2, replvars/2, connect/1, query/2, query_multi/2]).
 
 -record(state, {authquery, superquery}).
 
@@ -117,3 +117,8 @@ connect(Opts) ->
 
 query(Collection, Selector) ->
     ecpool:with_client(?APP, fun(Conn) -> mongo_api:find_one(Conn, Collection, Selector, #{}) end).
+
+query_multi(Collection, SelectorList) ->
+    lists:map(fun(Selector) ->
+        query(Collection, Selector)
+    end, SelectorList).

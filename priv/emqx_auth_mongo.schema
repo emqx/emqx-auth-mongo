@@ -240,19 +240,37 @@ end}.
   {default, ""},
   {datatype, string}
 ]}.
+{mapping, "auth.mongo.acl_query.selector.$id", "emqx_auth_mongo.acl_query", [
+  {default, ""},
+  {datatype, string}
+]}.
 
 {translation, "emqx_auth_mongo.acl_query", fun(Conf) ->
   case cuttlefish:conf_get("auth.mongo.acl_query", Conf) of
     false -> cuttlefish:unset();
     true  -> Collection = cuttlefish:conf_get("auth.mongo.acl_query.collection", Conf),
-             SelectorStr = cuttlefish:conf_get("auth.mongo.acl_query.selector", Conf),
-             SelectorList =
-                 lists:map(fun(Selector) ->
-                         case string:tokens(Selector, "=") of
-                             [Field, Val] -> {list_to_binary(Field), list_to_binary(Val)};
-                             _ -> {<<"username">>, <<"%u">>}
-                         end
-                     end, string:tokens(SelectorStr, ", ")),
-             [{collection, Collection}, {selector, SelectorList}]
+             %SelectorStr = cuttlefish:conf_get("auth.mongo.acl_query.selector", Conf),
+             SelectorStrList =
+                lists:map(
+                    fun
+                        ({["auth","mongo","acl_query","selector"], ConfEntry}) ->
+                            ConfEntry;
+                        ({["auth","mongo","acl_query","selector", _], ConfEntry}) ->
+                            ConfEntry
+                    end,
+                    cuttlefish_variable:filter_by_prefix("auth.mongo.acl_query.selector", Conf)),
+            
+             SelectorListList =
+                 lists:map(
+                    fun(SelectorStr) ->
+                        lists:map(fun(Selector) ->
+                                case string:tokens(Selector, "=") of
+                                    [Field, Val] -> {list_to_binary(Field), list_to_binary(Val)};
+                                    _ -> {<<"username">>, <<"%u">>}
+                                end
+                            end, string:tokens(SelectorStr, ", "))
+                    end,
+                    SelectorStrList),
+             [{collection, Collection}, {selector, SelectorListList}]
   end
 end}.
