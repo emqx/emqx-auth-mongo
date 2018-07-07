@@ -57,9 +57,9 @@ groups() ->
     ].
 
 init_per_suite(Config) ->
-    DataDir = proplists:get_value(data_dir, Config),
-    [start_apps(App, DataDir) || App <- [emqttd, emqx_auth_mongo]],
-    Config.
+    [run_setup_steps(App) || App <- [emqx, emqx_auth_mongo]],
+    {ok, Connection} = ecpool_worker:client(gproc_pool:pick_worker({ecpool, emqx_auth_mongo})),
+    [{connection, Connection} | Config].
 
 end_per_suite(Config) ->
     {ok, Connection} = ?POOL(?APP),
@@ -179,7 +179,8 @@ server_config(_) ->
            {hosts,["localhost:6377"]},
            {options,[{pool_size,1},{max_overflow,0}]},
            {worker_options,
-               [{database,<<"mqtt">>}]},
+               [{database,<<"mqtt">>},
+                {auth_source,<<"mqtt">>}]},
            {auto_reconnect,1},
            {pool_size,1}],
     Auth_query =    
@@ -220,7 +221,7 @@ server_config(_) ->
     ?assertEqual(lists:sort(Acl_query), lists:sort(Acl)).
 
 set_cmd(Key) ->
-    emqx_cli_config:run(["config", "set", string:join(["auth.mongo", Key], "."), "--app=emqx_auth_mongo"]).
+    clique:run(["config", "set", string:join(["auth.mongo", Key], "."), "--app=emqx_auth_mongo"]).
 
 ct_log(Connection, Collection, User1) ->
     Selector = {list_to_binary("username"), list_to_binary("%u")},
@@ -237,14 +238,44 @@ find(Connection, Collection, Selector, Projector) ->
     mc_cursor:close(Cursor),
     Result.
 
-start_apps(App, DataDir) ->
-    Schema = cuttlefish_schema:files([filename:join([DataDir, atom_to_list(App) ++ ".schema"])]),
-    Conf = conf_parse:file(filename:join([DataDir, atom_to_list(App) ++ ".conf"])),
-    NewConfig = cuttlefish_generator:map(Schema, Conf),
-%%    ct:log("NewConfig:~p", [NewConfig]),
-    Vals = proplists:get_value(App, NewConfig),
-    [application:set_env(App, Par, Value) || {Par, Value} <- Vals],
+run_setup_steps(App) ->
+    NewConfig = generate_config(App),
+    lists:foreach(fun set_app_env/1, NewConfig),
     application:ensure_all_started(App).
+
+generate_config(emqx) ->
+    Schema = cuttlefish_schema:files([local_path(["deps","emqx", "priv", "emqx.schema"])]),
+    Conf = conf_parse:file([local_path(["deps", "emqx","etc", "emqx.conf"])]),
+    cuttlefish_generator:map(Schema, Conf);
+
+generate_config(emqx_auth_mongo) ->
+    Schema = cuttlefish_schema:files([local_path(["priv", "emqx_auth_mongo.schema"])]),
+    Conf = conf_parse:file([local_path(["etc", "emqx_auth_mongo.conf"])]),
+    cuttlefish_generator:map(Schema, Conf).
+
+get_base_dir(Module) ->
+    {file, Here} = code:is_loaded(Module),
+    filename:dirname(filename:dirname(Here)).
+
+get_base_dir() ->
+    get_base_dir(?MODULE).
+
+local_path(Components, Module) ->
+    filename:join([get_base_dir(Module) | Components]).
+
+local_path(Components) ->
+    local_path(Components, ?MODULE).
+
+set_app_env({App, Lists}) ->
+    lists:foreach(fun({acl_file, _Var}) ->
+                        application:set_env(App, acl_file, local_path(["deps", "emqx", "etc", "acl.conf"]));
+                     ({license_file, _Var}) ->
+                        application:set_env(App, license_file, local_path(["deps", "emqx", "etc", "emqx.lic"]));
+                     ({plugins_loaded_file, _Var}) ->
+                        application:set_env(App, plugins_loaded_file, local_path(["deps","emqx","test", "emqx_SUITE_data","loaded_plugins"]));
+                     ({Par, Var}) ->
+                        application:set_env(App, Par, Var)
+                  end, Lists).
 
 reload({Par, Vals}) when is_list(Vals) ->
     application:stop(?APP),
