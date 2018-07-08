@@ -40,12 +40,16 @@ check_acl({Client, PubSub, Topic}, #state{aclquery = AclQuery}) ->
             maps:from_list(emqx_auth_mongo:replvars(Selector, Client))
         end, SelectorList),
     case emqx_auth_mongo:query_multi(Coll, SelectorMapList) of
-        undefined ->
+        [] ->
             ignore;
         Rows ->
-            case match(Client, Topic, topics(PubSub, Rows)) of
+            try match(Client, Topic, topics(PubSub, Rows)) of
                 matched -> allow;
                 nomatch -> deny
+            catch
+                ErrC:Err ->
+                    lager:error("check mongo (~p) ACL failed, got ACL config: ~p, error: {~p:~p}", [PubSub, Rows, ErrC, Err]),
+                    ignore
             end
     end.
 
