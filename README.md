@@ -48,6 +48,12 @@ auth.mongo.pool = 8
 ## Value: String
 ## auth.mongo.password =
 
+## MongoDB AuthSource
+##
+## Value: String
+## Default: mqtt
+## auth.mongo.auth_source = admin
+
 ## MongoDB database
 ##
 ## Value: String
@@ -182,5 +188,5 @@ Apache License Version 2.0
 Author
 ------
 
-EMQ X-Men Team.
+EMQ X Team.
 

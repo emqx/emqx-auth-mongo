@@ -3,9 +3,9 @@ PROJECT_DESCRIPTION = EMQ X Authentication/ACL with MongoDB
 PROJECT_VERSION = 3.0
 
 DEPS = mongodb ecpool clique
-dep_mongodb = git https://github.com/emqtt/mongodb-erlang v3.0.3
+dep_mongodb = git https://github.com/emqtt/mongodb-erlang v3.0.5
 dep_ecpool  = git https://github.com/emqtt/ecpool master
-dep_clique  = git https://github.com/emqtt/clique
+dep_clique  = git https://github.com/emqx/clique
 
 BUILD_DEPS = emqx cuttlefish
 dep_emqx = git https://github.com/emqtt/emqttd emqx30
