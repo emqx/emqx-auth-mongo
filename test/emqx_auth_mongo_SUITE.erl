@@ -1,5 +1,4 @@
-%%--------------------------------------------------------------------
-%% Copyright (c) 2015-2017 Feng Lee <feng@emqtt.io>.
+%% Copyright (c) 2018 EMQ Technologies Co., Ltd. All Rights Reserved.
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -12,7 +11,6 @@
 %% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
-%%--------------------------------------------------------------------
 
 -module(emqx_auth_mongo_SUITE).
 
@@ -42,19 +40,15 @@
                     {<<"username">>, <<"bcrypt_foo">>, <<"password">>, <<"$2a$12$sSS8Eg.ovVzaHzi1nUHYK.HbUIOdlQI0iS22Q5rd5z.JVVYH6sfm6">>, <<"salt">>, <<"$2a$12$sSS8Eg.ovVzaHzi1nUHYK.">>, <<"is_superuser">>, false}
                     ]).
 
-all() -> 
+all() ->
     [{group, emqx_auth_mongo_auth},
      {group, emqx_auth_mongo_acl},
-     {group, auth_mongo_config}
-    ].
+     {group, auth_mongo_config}].
 
-groups() -> 
-    [{emqx_auth_mongo_auth, [sequence],
-     [check_auth, list_auth]},
-    {emqx_auth_mongo_acl, [sequence],
-     [check_acl, acl_super]},
-    {auth_mongo_config, [sequence], [server_config]}
-    ].
+groups() ->
+    [{emqx_auth_mongo_auth, [sequence], [check_auth, list_auth]},
+     {emqx_auth_mongo_acl, [sequence], [check_acl, acl_super]},
+     {auth_mongo_config, [sequence], [server_config]}].
 
 init_per_suite(Config) ->
     DataDir = proplists:get_value(data_dir, Config),
@@ -182,12 +176,12 @@ server_config(_) ->
                [{database,<<"mqtt">>}]},
            {auto_reconnect,1},
            {pool_size,1}],
-    Auth_query =    
+    Auth_query =
           [{collection,"mqtt_usertest"},
            {password_field,[<<"password1">>]},
            {password_hash,{sha256,salt}},
            {selector,"username=%c"}],
-    Super_query = 
+    Super_query =
           [{collection,"mqtt_usertest"},
            {super_field,"is_superuser11"},
            {selector,"username=%c"}],

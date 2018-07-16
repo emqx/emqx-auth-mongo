@@ -1,5 +1,4 @@
-%%--------------------------------------------------------------------
-%% Copyright (c) 2013-2018 EMQ Enterprise, Inc. (http://emqtt.io)
+%% Copyright (c) 2018 EMQ Technologies Co., Ltd. All Rights Reserved.
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -12,13 +11,10 @@
 %% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
-%%--------------------------------------------------------------------
 
 -module(emqx_auth_mongo_app).
 
 -behaviour(application).
-
--author("Feng Lee<feng@emqtt.io").
 
 -include("emqx_auth_mongo.hrl").
 
@@ -28,7 +24,7 @@
 -export([start/2, prep_stop/1, stop/1]).
 
 %%--------------------------------------------------------------------
-%% Application Callbacks
+%% Application callbacks
 %%--------------------------------------------------------------------
 
 start(_StartType, _StartArgs) ->
@@ -55,7 +51,7 @@ reg_aclmod(AclQuery) ->
     emqx_access_control:register_mod(acl, emqx_acl_mongo, AclQuery).
 
 %%--------------------------------------------------------------------
-%% Internal Functions
+%% Internal functions
 %%--------------------------------------------------------------------
 
 with_env(Name, Fun) ->
@@ -64,7 +60,7 @@ with_env(Name, Fun) ->
         {ok, Config} -> Fun(r(Name, Config))
     end.
 
-r(super_query, undefined) -> 
+r(super_query, undefined) ->
     undefined;
 r(super_query, Config) ->
     #superquery{collection = list_to_binary(get_value(collection, Config, "mqtt_user")),
