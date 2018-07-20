@@ -27,7 +27,7 @@
 
 -behaviour(ecpool_worker).
 
--export([replvar/2, connect/1, query/2]).
+-export([replvar/2, replvars/2, connect/1, query/2]).
 
 -record(state, {authquery, superquery}).
  
@@ -46,7 +46,7 @@ check(#mqtt_client{username = Username}, Password, _State) when ?EMPTY(Username)
 check(Client, Password, #state{authquery = AuthQuery, superquery = SuperQuery}) ->
     #authquery{collection = Collection, field = Fields,
                hash = HashType, selector = Selector} = AuthQuery,
-    case query(Collection, replvar(Selector, Client)) of
+    case query(Collection, maps:from_list(replvars(Selector, Client))) of
         undefined -> ignore;
         UserMap ->
             Result = case [maps:get(Field, UserMap, undefined) || Field <- Fields] of
@@ -73,7 +73,7 @@ check_pass(PassHash, Salt, Password, {HashType, salt}) ->
     check_pass(PassHash, hash(HashType, <<Password/binary, Salt/binary>>)).
 
 check_pass(PassHash, PassHash) -> ok;
-check_pass(_, _)               -> {error, password_error}. 
+check_pass(_, _)               -> {error, password_error}.
 
 hash(Type, Password) -> emqttd_auth_mod:passwd_hash(Type, Password).
 
@@ -87,11 +87,16 @@ description() -> "Authentication with MongoDB".
 is_superuser(undefined, _MqttClient) ->
     false;
 is_superuser(#superquery{collection = Coll, field = Field, selector = Selector}, Client) ->
-    Row = query(Coll, replvar(Selector, Client)),
+    Row = query(Coll, maps:from_list(replvars(Selector, Client))),
     case maps:get(Field, Row, false) of
         true   -> true;
         _False -> false
     end.
+
+replvars(VarList, MqttClient) ->
+   lists:map(fun(Var) ->
+           replvar(Var, MqttClient)
+       end, VarList).
 
 replvar({Field, <<"%u">>}, #mqtt_client{username = Username}) ->
     {Field, Username};
