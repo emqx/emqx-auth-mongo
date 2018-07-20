@@ -69,21 +69,14 @@ r(super_query, undefined) ->
 r(super_query, Config) ->
     #superquery{collection = list_to_binary(get_value(collection, Config, "mqtt_user")),
                 field      = list_to_binary(get_value(super_field, Config, "is_superuser")),
-                selector   = parse_selector(get_value(selector, Config, {"username", "%u"}))};
+                selector   = get_value(selector, Config, ?DEFAULT_SELECTORS)};
 
 r(auth_query, Config) ->
     #authquery{collection = list_to_binary(get_value(collection, Config, "mqtt_user")),
                field      = get_value(password_field, Config, [<<"password">>]),
                hash       = get_value(password_hash, Config, sha256),
-               selector   = parse_selector(get_value(selector, Config, {"username", "%u"}))};
+               selector   = get_value(selector, Config, ?DEFAULT_SELECTORS)};
 
 r(acl_query, Config) ->
     #aclquery{collection = list_to_binary(get_value(collection, Config, "mqtt_acl")),
-              selector   = parse_selector(get_value(selector, Config, {"username", "%u"}))}.
-
-parse_selector(Selector) ->
-    case string:tokens(Selector, "=") of
-        [Field, Val] -> {list_to_binary(Field), list_to_binary(Val)};
-        _ -> {<<"username">>, <<"%u">>}
-    end.
-
+              selector   = get_value(selector, Config, [?DEFAULT_SELECTORS])}.
