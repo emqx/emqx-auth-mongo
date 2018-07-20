@@ -35,14 +35,23 @@ check_acl({#mqtt_client{username = <<$$, _/binary>>}, _PubSub, _Topic}, _State) 
     ignore;
 
 check_acl({Client, PubSub, Topic}, #state{aclquery = AclQuery}) ->
-    #aclquery{collection = Coll, selector = Selector} = AclQuery,
-    case emq_auth_mongo:query(Coll, emq_auth_mongo:replvar(Selector, Client)) of
-        undefined ->
+    #aclquery{collection = Coll, selector = SelectorList} = AclQuery,
+    SelectorMapList =
+        lists:map(fun(Selector) ->
+            maps:from_list(emq_auth_mongo:replvars(Selector, Client))
+        end, SelectorList),
+    case emq_auth_mongo:query_multi(Coll, SelectorMapList) of
+        [] ->
             ignore;
-        Row ->
-            case match(Client, Topic, topics(PubSub, Row)) of
+        Rows ->
+            try match(Client, Topic, topics(PubSub, Rows)) of
                 matched -> allow;
                 nomatch -> deny
+            catch
+                ErrC:Err ->
+                    lager:error("check mongo (~p) ACL failed, got ACL config: ~p, error: {~p:~p}",
+                            [PubSub, Rows, ErrC, Err]),
+                    ignore
             end
     end.
 
@@ -54,11 +63,17 @@ match(Client, Topic, [TopicFilter|More]) ->
         false -> match(Client, Topic, More)
     end.
 
-topics(publish, Row) ->
-    lists:umerge(maps:get(<<"publish">>, Row, []), maps:get(<<"pubsub">>, Row, []));
+topics(publish, Rows) ->
+    lists:foldl(fun(Row, Acc) ->
+        Topics = maps:get(<<"publish">>, Row, []) ++ maps:get(<<"pubsub">>, Row, []),
+        lists:umerge(Acc, Topics)
+    end, [], Rows);
 
-topics(subscribe, Row) ->
-    lists:umerge(maps:get(<<"subscribe">>, Row, []), maps:get(<<"pubsub">>, Row, [])).
+topics(subscribe, Rows) ->
+    lists:foldl(fun(Row, Acc) ->
+        Topics = maps:get(<<"subscribe">>, Row, []) ++ maps:get(<<"pubsub">>, Row, []),
+        lists:umerge(Acc, Topics)
+    end, [], Rows).
 
 feedvar(#mqtt_client{client_id = ClientId, username = Username}, Str) ->
     lists:foldl(fun({Var, Val}, Acc) ->

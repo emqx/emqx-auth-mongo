@@ -1,6 +1,8 @@
 
 -define(APP, emq_auth_mongo).
 
+-define(DEFAULT_SELECTORS, [{<<"username">>, <<"%u">>}]).
+
 -record(superquery, {collection = <<"mqtt_user">>,
                      field      = <<"is_superuser">>,
                      selector   = {<<"username">>, <<"%u">>}}).
