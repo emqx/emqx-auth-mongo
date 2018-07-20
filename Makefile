@@ -1,15 +1,15 @@
 PROJECT = emq_auth_mongo
 PROJECT_DESCRIPTION = Authentication/ACL with MongoDB
-PROJECT_VERSION = 2.3.10
+PROJECT_VERSION = 2.3.11
 
 DEPS = mongodb ecpool clique
-dep_mongodb = git https://github.com/emqtt/mongodb-erlang v3.0.5
-dep_ecpool  = git https://github.com/emqtt/ecpool master
-dep_clique  = git https://github.com/emqtt/clique
+dep_mongodb = git https://github.com/emqtt/mongodb-erlang v3.0.7
+dep_ecpool  = git https://github.com/emqtt/ecpool v0.2.1
+dep_clique  = git https://github.com/emqtt/clique v0.3.10
 
 BUILD_DEPS = emqttd cuttlefish
 dep_emqttd = git https://github.com/emqtt/emqttd develop
-dep_cuttlefish = git https://github.com/emqtt/cuttlefish
+dep_cuttlefish = git https://github.com/emqtt/cuttlefish v2.0.11
 
 NO_AUTOPATCH = cuttlefish
 
