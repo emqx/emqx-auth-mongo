@@ -24,9 +24,7 @@
 
 -behaviour(ecpool_worker).
 
--export([replvar/2, connect/1, query/2]).
-
--record(state, {authquery, superquery}).
+-export([replvar/2, replvars/2, connect/1, query/2, query_multi/2]).
 
 -define(EMPTY(Username), (Username =:= undefined orelse Username =:= <<>>)).
 
@@ -35,44 +33,38 @@
 %%--------------------------------------------------------------------
 
 init({AuthQuery, SuperQuery}) ->
-  {ok, #state{authquery = AuthQuery, superquery = SuperQuery}}.
+    {ok, #{authquery => AuthQuery, superquery => SuperQuery}}.
 
-check(#mqtt_client{username = Username}, Password, _State) when ?EMPTY(Username); ?EMPTY(Password) ->
+check(#{username := Username}, Password, _State) when ?EMPTY(Username); ?EMPTY(Password) ->
     {error, username_or_password_undefined};
 
-check(Client, Password, #state{authquery = AuthQuery, superquery = SuperQuery}) ->
+check(Credentials, Password, #{authquery := AuthQuery, superquery := SuperQuery}) ->
     #authquery{collection = Collection, field = Fields,
                hash = HashType, selector = Selector} = AuthQuery,
-    case query(Collection, replvar(Selector, Client)) of
+    case query(Collection, maps:from_list(replvars(Selector, Credentials))) of
         undefined -> ignore;
         UserMap ->
             Result = case [maps:get(Field, UserMap, undefined) || Field <- Fields] of
-                [undefined] -> {error, password_error};
-                [PassHash] -> check_pass(PassHash, Password, HashType);
-                [PassHash, Salt|_] -> check_pass(PassHash, Salt, Password, HashType)
-            end,
-            case Result of
-                ok -> {ok, is_superuser(SuperQuery, Client)};
-                Error -> Error
-            end
+                         [undefined] -> {error, password_error};
+                         [PassHash] -> check_pass(PassHash, Password, HashType);
+                         [PassHash, Salt|_] -> check_pass(PassHash, Salt, Password, HashType)
+                     end,
+            case Result of ok -> {ok, is_superuser(SuperQuery, Credentials)}; Error -> Error end
     end.
 
-
 check_pass(PassHash, Password, HashType) ->
-    check_pass(PassHash, hash(HashType, Password)).
+    check_pass(PassHash, emqx_passwd:hash(HashType, Password)).
 check_pass(PassHash, Salt, Password, {pbkdf2, Macfun, Iterations, Dklen}) ->
-    check_pass(PassHash, hash(pbkdf2, {Salt, Password, Macfun, Iterations, Dklen}));
+    check_pass(PassHash, emqx_passwd:hash(pbkdf2, {Salt, Password, Macfun, Iterations, Dklen}));
 check_pass(PassHash, Salt, Password, {salt, bcrypt}) ->
-    check_pass(PassHash, hash(bcrypt, {Salt, Password}));
+    check_pass(PassHash, emqx_passwd:hash(bcrypt, {Salt, Password}));
 check_pass(PassHash, Salt, Password, {salt, HashType}) ->
-    check_pass(PassHash, hash(HashType, <<Salt/binary, Password/binary>>));
+    check_pass(PassHash, emqx_passwd:hash(HashType, <<Salt/binary, Password/binary>>));
 check_pass(PassHash, Salt, Password, {HashType, salt}) ->
-    check_pass(PassHash, hash(HashType, <<Password/binary, Salt/binary>>)).
+    check_pass(PassHash, emqx_passwd:hash(HashType, <<Password/binary, Salt/binary>>)).
 
 check_pass(PassHash, PassHash) -> ok;
-check_pass(_, _)               -> {error, password_error}.
-
-hash(Type, Password) -> emqx_auth_mod:passwd_hash(Type, Password).
+check_pass(_Hash1, _Hash2)     -> {error, password_error}.
 
 description() -> "Authentication with MongoDB".
 
@@ -80,19 +72,22 @@ description() -> "Authentication with MongoDB".
 %% Is Superuser?
 %%--------------------------------------------------------------------
 
--spec(is_superuser(undefined | list(), mqtt_client()) -> boolean()).
-is_superuser(undefined, _MqttClient) ->
+-spec(is_superuser(undefined | #superquery{}, emqx_types:credentials()) -> boolean()).
+is_superuser(undefined, _Credentials) ->
     false;
-is_superuser(#superquery{collection = Coll, field = Field, selector = Selector}, Client) ->
-    Row = query(Coll, replvar(Selector, Client)),
+is_superuser(#superquery{collection = Coll, field = Field, selector = Selector}, Credentials) ->
+    Row = query(Coll, maps:from_list(replvars(Selector, Credentials))),
     case maps:get(Field, Row, false) of
         true   -> true;
         _False -> false
     end.
 
-replvar({Field, <<"%u">>}, #mqtt_client{username = Username}) ->
+replvars(VarList, Credentials) ->
+    lists:map(fun(Var) -> replvar(Var, Credentials) end, VarList).
+
+replvar({Field, <<"%u">>}, #{username := Username}) ->
     {Field, Username};
-replvar({Field, <<"%c">>}, #mqtt_client{client_id = ClientId}) ->
+replvar({Field, <<"%c">>}, #{client_id := ClientId}) ->
     {Field, ClientId};
 replvar(Selector, _Client) ->
     Selector.
@@ -110,4 +105,12 @@ connect(Opts) ->
 
 query(Collection, Selector) ->
     ecpool:with_client(?APP, fun(Conn) -> mongo_api:find_one(Conn, Collection, Selector, #{}) end).
+
+query_multi(Collection, SelectorList) ->
+    lists:foldr(fun(Selector, Acc) ->
+        case query(Collection, Selector) of
+            undefined -> Acc;
+            Result -> [Result|Acc]
+        end
+    end, [], SelectorList).
 

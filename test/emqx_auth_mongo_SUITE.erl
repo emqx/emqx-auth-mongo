@@ -18,13 +18,10 @@
 
 -import(proplists, [get_value/3]).
 
--include_lib("emqx/include/emqx.hrl").
-
--include_lib("common_test/include/ct.hrl").
-
--include_lib("eunit/include/eunit.hrl").
-
 -include("emqx_auth_mongo.hrl").
+-include_lib("emqx/include/emqx.hrl").
+-include_lib("common_test/include/ct.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 -define(POOL(App),  ecpool_worker:client(gproc_pool:pick_worker({ecpool, App}))).
 
@@ -51,9 +48,9 @@ groups() ->
      {auth_mongo_config, [sequence], [server_config]}].
 
 init_per_suite(Config) ->
-    DataDir = proplists:get_value(data_dir, Config),
-    [start_apps(App, DataDir) || App <- [emqttd, emqx_auth_mongo]],
-    Config.
+    [run_setup_steps(App) || App <- [emqx, emqx_auth_mongo]],
+    {ok, Connection} = ecpool_worker:client(gproc_pool:pick_worker({ecpool, emqx_auth_mongo})),
+    [{connection, Connection} | Config].
 
 end_per_suite(Config) ->
     {ok, Connection} = ?POOL(?APP),
@@ -71,44 +68,44 @@ check_auth(Config) ->
     mongo_api:delete(Connection, Collection, {}),
     mongo_api:insert(Connection, Collection, ?INIT_AUTH),
 
-    Plain = #mqtt_client{client_id = <<"client1">>, username = <<"plain">>},
-    Plain1 = #mqtt_client{client_id = <<"client1">>, username = <<"plain2">>},
-    Md5 = #mqtt_client{client_id = <<"md5">>, username = <<"md5">>},
-    Sha = #mqtt_client{client_id = <<"sha">>, username = <<"sha">>},
-    Sha256 = #mqtt_client{client_id = <<"sha256">>, username = <<"sha256">>},
-    Pbkdf2 = #mqtt_client{client_id = <<"pbkdf2_password">>, username = <<"pbkdf2_password">>},
-    Bcrypt = #mqtt_client{client_id = <<"bcrypt_foo">>, username = <<"bcrypt_foo">>},
-    User1 = #mqtt_client{client_id = <<"bcrypt_foo">>, username = <<"user">>},
+    Plain = #{client_id => <<"client1">>, username => <<"plain">>},
+    Plain1 = #{client_id => <<"client1">>, username => <<"plain2">>},
+    Md5 = #{client_id => <<"md5">>, username => <<"md5">>},
+    Sha = #{client_id => <<"sha">>, username => <<"sha">>},
+    Sha256 = #{client_id => <<"sha256">>, username => <<"sha256">>},
+    Pbkdf2 = #{client_id => <<"pbkdf2_password">>, username => <<"pbkdf2_password">>},
+    Bcrypt = #{client_id => <<"bcrypt_foo">>, username => <<"bcrypt_foo">>},
+    User1 = #{client_id => <<"bcrypt_foo">>, username => <<"user">>},
     reload({auth_query, [{password_hash, plain}]}),
     %% With exactly username/password, connection success
-    {ok, true} = emqx_access_control:auth(Plain, <<"plain">>),
+    {ok, true} = emqx_access_control:authenticate(Plain, <<"plain">>),
     %% With exactly username and wrong password, connection fail
-    {error, password_error} = emqx_access_control:auth(Plain, <<"error_pwd">>),
+    {error, password_error} = emqx_access_control:authenticate(Plain, <<"error_pwd">>),
     %% With wrong username and wrong password, emqx_auth_mongo auth fail, then allow anonymous authentication
-    ok = emqx_access_control:auth(Plain1, <<"error_pwd">>),
+    ok = emqx_access_control:authenticate(Plain1, <<"error_pwd">>),
     %% With wrong username and exactly password, emqx_auth_mongo auth fail, then allow anonymous authentication
-    ok = emqx_access_control:auth(Plain1, <<"plain">>),
+    ok = emqx_access_control:authenticate(Plain1, <<"plain">>),
     reload({auth_query, [{password_hash, md5}]}),
-    {ok, false} = emqx_access_control:auth(Md5, <<"md5">>),
+    {ok, false} = emqx_access_control:authenticate(Md5, <<"md5">>),
     reload({auth_query, [{password_hash, sha}]}),
-    {ok, false} = emqx_access_control:auth(Sha, <<"sha">>),
+    {ok, false} = emqx_access_control:authenticate(Sha, <<"sha">>),
     reload({auth_query, [{password_hash, sha256}]}),
-    {ok, false} = emqx_access_control:auth(Sha256, <<"sha256">>),
+    {ok, false} = emqx_access_control:authenticate(Sha256, <<"sha256">>),
     %%pbkdf2 sha
     reload({auth_query, [{password_hash, {pbkdf2, sha, 1, 16}}, {password_field, [<<"password">>, <<"salt">>]}]}),
-    {ok, false} = emqx_access_control:auth(Pbkdf2, <<"password">>),
+    {ok, false} = emqx_access_control:authenticate(Pbkdf2, <<"password">>),
     reload({auth_query, [{password_hash, {salt, bcrypt}}]}),
-    {ok, false} = emqx_access_control:auth(Bcrypt, <<"foo">>),
-    ok = emqx_access_control:auth(User1, <<"foo">>).
+    {ok, false} = emqx_access_control:authenticate(Bcrypt, <<"foo">>),
+    ok = emqx_access_control:authenticate(User1, <<"foo">>).
 
 list_auth(_Config) ->
     application:start(emqx_auth_username),
     emqx_auth_username:add_user(<<"user1">>, <<"password1">>),
-    User1 = #mqtt_client{client_id = <<"client1">>, username = <<"user1">>},
-    ok = emqx_access_control:auth(User1, <<"password1">>),
+    User1 = #{client_id => <<"client1">>, username => <<"user1">>},
+    ok = emqx_access_control:authenticate(User1, <<"password1">>),
     reload({auth_query, [{password_hash, plain}, {password_field, [<<"password">>]}]}),
-    Plain = #mqtt_client{client_id = <<"client1">>, username = <<"plain">>},
-    {ok, true} = emqx_access_control:auth(Plain, <<"plain">>),
+    Plain = #{client_id => <<"client1">>, username => <<"plain">>},
+    {ok, true} = emqx_access_control:authenticate(Plain, <<"plain">>),
     application:stop(emqx_auth_username).
 
 check_acl(Config) ->
@@ -117,10 +114,10 @@ check_acl(Config) ->
     Collection = collection(aclquery, AppConfig),
     mongo_api:delete(Connection, Collection, {}),
     mongo_api:insert(Connection, Collection, ?INIT_ACL),
-    User1 = #mqtt_client{client_id = <<"client1">>, username = <<"testuser">>},
-    User2 = #mqtt_client{client_id = <<"client2">>, username = <<"dashboard">>},
-    User3 = #mqtt_client{client_id = <<"client2">>, username = <<"user3">>},
-    User4 = #mqtt_client{client_id = <<"$$client2">>, username = <<"$$user3">>},
+    User1 = #{client_id => <<"client1">>, username => <<"testuser">>},
+    User2 = #{client_id => <<"client2">>, username => <<"dashboard">>},
+    User3 = #{client_id => <<"client2">>, username => <<"user3">>},
+    User4 = #{client_id => <<"$$client2">>, username => <<"$$user3">>},
     3 = mongo_api:count(Connection, Collection, {}, 17),
     %% ct log output
     %%ct_log(Connection, Collection, User1),
@@ -134,7 +131,10 @@ check_acl(Config) ->
 
 acl_super(_Config) ->
     reload({auth_query, [{password_hash, plain}]}),
-    {ok, C} = emqttc:start_link([{host, "localhost"}, {client_id, <<"simpleClient">>}, {username, <<"plain">>}, {password, <<"plain">>}]),
+    {ok, C} = emqttc:start_link([{host, "localhost"},
+                                 {client_id, <<"simpleClient">>},
+                                 {username, <<"plain">>},
+                                 {password, <<"plain">>}]),
     timer:sleep(10),
     emqttc:subscribe(C, <<"TopicA">>, qos2),
     timer:sleep(1000),
@@ -151,14 +151,14 @@ acl_super(_Config) ->
     emqttc:disconnect(C).
 
 collection(Query, Config) ->
-    case Query of
-    superquery ->
-        list_to_binary(get_value(collection, Config, "mqtt_user"));
-    authquery ->
-        list_to_binary(get_value(collection, Config, "mqtt_user"));
-    aclquery ->
-        list_to_binary(get_value(collection, Config, "mqtt_acl"))
-    end.
+    iolist_to_binary(case Query of
+                         superquery ->
+                             get_value(collection, Config, "mqtt_user");
+                         authquery ->
+                             get_value(collection, Config, "mqtt_user");
+                         aclquery ->
+                             get_value(collection, Config, "mqtt_acl")
+                     end).
 
 comment_config(_) ->
     application:stop(?APP),
@@ -173,7 +173,8 @@ server_config(_) ->
            {hosts,["localhost:6377"]},
            {options,[{pool_size,1},{max_overflow,0}]},
            {worker_options,
-               [{database,<<"mqtt">>}]},
+               [{database,<<"mqtt">>},
+                {auth_source,<<"mqtt">>}]},
            {auto_reconnect,1},
            {pool_size,1}],
     Auth_query =
@@ -214,7 +215,7 @@ server_config(_) ->
     ?assertEqual(lists:sort(Acl_query), lists:sort(Acl)).
 
 set_cmd(Key) ->
-    emqx_cli_config:run(["config", "set", string:join(["auth.mongo", Key], "."), "--app=emqx_auth_mongo"]).
+    clique:run(["config", "set", string:join(["auth.mongo", Key], "."), "--app=emqx_auth_mongo"]).
 
 ct_log(Connection, Collection, User1) ->
     Selector = {list_to_binary("username"), list_to_binary("%u")},
@@ -231,14 +232,44 @@ find(Connection, Collection, Selector, Projector) ->
     mc_cursor:close(Cursor),
     Result.
 
-start_apps(App, DataDir) ->
-    Schema = cuttlefish_schema:files([filename:join([DataDir, atom_to_list(App) ++ ".schema"])]),
-    Conf = conf_parse:file(filename:join([DataDir, atom_to_list(App) ++ ".conf"])),
-    NewConfig = cuttlefish_generator:map(Schema, Conf),
-%%    ct:log("NewConfig:~p", [NewConfig]),
-    Vals = proplists:get_value(App, NewConfig),
-    [application:set_env(App, Par, Value) || {Par, Value} <- Vals],
+run_setup_steps(App) ->
+    NewConfig = generate_config(App),
+    lists:foreach(fun set_app_env/1, NewConfig),
     application:ensure_all_started(App).
+
+generate_config(emqx) ->
+    Schema = cuttlefish_schema:files([local_path(["deps","emqx", "priv", "emqx.schema"])]),
+    Conf = conf_parse:file([local_path(["deps", "emqx","etc", "emqx.conf"])]),
+    cuttlefish_generator:map(Schema, Conf);
+
+generate_config(emqx_auth_mongo) ->
+    Schema = cuttlefish_schema:files([local_path(["priv", "emqx_auth_mongo.schema"])]),
+    Conf = conf_parse:file([local_path(["etc", "emqx_auth_mongo.conf"])]),
+    cuttlefish_generator:map(Schema, Conf).
+
+get_base_dir(Module) ->
+    {file, Here} = code:is_loaded(Module),
+    filename:dirname(filename:dirname(Here)).
+
+get_base_dir() ->
+    get_base_dir(?MODULE).
+
+local_path(Components, Module) ->
+    filename:join([get_base_dir(Module) | Components]).
+
+local_path(Components) ->
+    local_path(Components, ?MODULE).
+
+set_app_env({App, Lists}) ->
+    lists:foreach(fun({acl_file, _Var}) ->
+                        application:set_env(App, acl_file, local_path(["deps", "emqx", "etc", "acl.conf"]));
+                     ({license_file, _Var}) ->
+                        application:set_env(App, license_file, local_path(["deps", "emqx", "etc", "emqx.lic"]));
+                     ({plugins_loaded_file, _Var}) ->
+                        application:set_env(App, plugins_loaded_file, local_path(["deps","emqx","test", "emqx_SUITE_data","loaded_plugins"]));
+                     ({Par, Var}) ->
+                        application:set_env(App, Par, Var)
+                  end, Lists).
 
 reload({Par, Vals}) when is_list(Vals) ->
     application:stop(?APP),
@@ -252,3 +283,4 @@ reload({Par, Vals}) when is_list(Vals) ->
     end, TupleVals),
     application:set_env(?APP, Par, lists:append(NewVals, Vals)),
     application:start(?APP).
+
