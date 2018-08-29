@@ -36,6 +36,28 @@
   {datatype, string}
 ]}.
 
+{mapping, "auth.mongo.auth_source", "emqx_auth_mongo.server", [
+  {default, "mqtt"},
+  {datatype, string}
+]}.
+
+{mapping, "auth.mongo.ssl", "emqx_auth_mongo.server", [
+  {default, false},
+  {datatype, {enum, [true, false]}}
+]}.
+
+{mapping, "auth.mongo.ssl_opts.keyfile", "emqx_auth_mongo.server", [
+  {datatype, string}
+]}.
+
+{mapping, "auth.mongo.ssl_opts.certfile", "emqx_auth_mongo.server", [
+  {datatype, string}
+]}.
+
+{mapping, "auth.mongo.ssl_opts.cacertfile", "emqx_auth_mongo.server", [
+  {datatype, string}
+]}.
+
 {mapping, "auth.mongo.w_mode", "emqx_auth_mongo.server", [
   {default, undef},
   {datatype, {enum, [safe, unsafe, undef]}}
@@ -58,6 +80,7 @@
   Login = cuttlefish:conf_get("auth.mongo.login", Conf),
   Passwd = cuttlefish:conf_get("auth.mongo.password", Conf),
   DB = cuttlefish:conf_get("auth.mongo.database", Conf),
+  AuthSrc = cuttlefish:conf_get("auth.mongo.auth_source", Conf),
   R = cuttlefish:conf_get("auth.mongo.w_mode", Conf),
   W = cuttlefish:conf_get("auth.mongo.r_mode", Conf),
   Login0 = case Login =:= [] of
@@ -76,7 +99,20 @@
     true -> [];
     false -> [{r_mode, R}]
   end,
-  WorkerOptions = [{database, list_to_binary(DB)}] ++ Login0 ++ Passwd0 ++ W0 ++ R0,
+  Ssl = case cuttlefish:conf_get("auth.mongo.ssl", Conf) of
+    true ->
+      Filter  = fun(Opts) -> [{K, V} || {K, V} <- Opts, V =/= undefined] end,
+      SslOpts = fun(Prefix) ->
+                    Filter([{keyfile,    cuttlefish:conf_get(Prefix ++ ".keyfile", Conf, undefined)},
+                            {certfile,   cuttlefish:conf_get(Prefix ++ ".certfile", Conf, undefined)},
+                            {cacertfile, cuttlefish:conf_get(Prefix ++ ".cacertfile", Conf, undefined)}])
+                end,
+      [{ssl, true}, {ssl_opts, SslOpts("auth.mongo.ssl_opts")}];
+    false ->
+      []
+  end,
+  WorkerOptions = [{database, list_to_binary(DB)}, {auth_source, list_to_binary(AuthSrc)}]
+                    ++ Login0 ++ Passwd0 ++ W0 ++ R0 ++ Ssl,
 
   Vars = cuttlefish_variable:fuzzy_matches(["auth", "mongo", "topology", "$name"], Conf),
   Options = lists:map(fun({_, Name}) ->
@@ -128,7 +164,15 @@ end}.
   Collection = cuttlefish:conf_get("auth.mongo.auth_query.collection", Conf),
   PasswordField = cuttlefish:conf_get("auth.mongo.auth_query.password_field", Conf),
   PasswordHash = cuttlefish:conf_get("auth.mongo.auth_query.password_hash", Conf),
-  Selector = cuttlefish:conf_get("auth.mongo.auth_query.selector", Conf),
+  SelectorStr = cuttlefish:conf_get("auth.mongo.auth_query.selector", Conf),
+  SelectorList =
+      lists:map(fun(Selector) ->
+              case string:tokens(Selector, "=") of
+                  [Field, Val] -> {list_to_binary(Field), list_to_binary(Val)};
+                  _ -> {<<"username">>, <<"%u">>}
+              end
+          end, string:tokens(SelectorStr, ", ")),
+
   PasswordFields = [list_to_binary(Field) || Field <- string:tokens(PasswordField, ",")],
   HashValue =
     case string:tokens(PasswordHash, ",") of
@@ -141,7 +185,7 @@ end}.
   {password_field, PasswordFields},
   %% Hash Algorithm: plain, md5, sha, sha256, pbkdf2?
   {password_hash, HashValue},
-  {selector, Selector}
+  {selector, SelectorList}
 ]
 end}.
 
@@ -170,8 +214,15 @@ end}.
     false -> cuttlefish:unset();
     true  -> Collection = cuttlefish:conf_get("auth.mongo.super_query.collection", Conf),
              SuperField = cuttlefish:conf_get("auth.mongo.super_query.super_field", Conf),
-             Selector = cuttlefish:conf_get("auth.mongo.super_query.selector", Conf),
-             [{collection, Collection}, {super_field, SuperField}, {selector, Selector}]
+             SelectorStr = cuttlefish:conf_get("auth.mongo.super_query.selector", Conf),
+             SelectorList =
+                 lists:map(fun(Selector) ->
+                         case string:tokens(Selector, "=") of
+                             [Field, Val] -> {list_to_binary(Field), list_to_binary(Val)};
+                             _ -> {<<"username">>, <<"%u">>}
+                         end
+                     end, string:tokens(SelectorStr, ", ")),
+             [{collection, Collection}, {super_field, SuperField}, {selector, SelectorList}]
   end
 end}.
 
@@ -189,12 +240,37 @@ end}.
   {default, ""},
   {datatype, string}
 ]}.
+{mapping, "auth.mongo.acl_query.selector.$id", "emqx_auth_mongo.acl_query", [
+  {default, ""},
+  {datatype, string}
+]}.
 
 {translation, "emqx_auth_mongo.acl_query", fun(Conf) ->
   case cuttlefish:conf_get("auth.mongo.acl_query", Conf) of
     false -> cuttlefish:unset();
     true  -> Collection = cuttlefish:conf_get("auth.mongo.acl_query.collection", Conf),
-             Selector = cuttlefish:conf_get("auth.mongo.acl_query.selector", Conf),
-             [{collection, Collection}, {selector, Selector}]
+             %SelectorStr = cuttlefish:conf_get("auth.mongo.acl_query.selector", Conf),
+             SelectorStrList =
+                lists:map(
+                    fun
+                        ({["auth","mongo","acl_query","selector"], ConfEntry}) ->
+                            ConfEntry;
+                        ({["auth","mongo","acl_query","selector", _], ConfEntry}) ->
+                            ConfEntry
+                    end,
+                    cuttlefish_variable:filter_by_prefix("auth.mongo.acl_query.selector", Conf)),
+            
+             SelectorListList =
+                 lists:map(
+                    fun(SelectorStr) ->
+                        lists:map(fun(Selector) ->
+                                case string:tokens(Selector, "=") of
+                                    [Field, Val] -> {list_to_binary(Field), list_to_binary(Val)};
+                                    _ -> {<<"username">>, <<"%u">>}
+                                end
+                            end, string:tokens(SelectorStr, ", "))
+                    end,
+                    SelectorStrList),
+             [{collection, Collection}, {selector, SelectorListList}]
   end
 end}.

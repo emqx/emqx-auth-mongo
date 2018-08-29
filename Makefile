@@ -10,7 +10,7 @@ dep_emqx_passwd = git https://github.com/emqx/emqx-passwd emqx30
 
 BUILD_DEPS = emqx cuttlefish
 dep_emqx = git https://github.com/emqtt/emqttd emqx30
-dep_cuttlefish = git https://github.com/emqtt/cuttlefish
+dep_cuttlefish = git https://github.com/emqtt/cuttlefish emqx30
 
 NO_AUTOPATCH = cuttlefish
 

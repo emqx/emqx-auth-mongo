@@ -18,10 +18,11 @@
 
 -import(proplists, [get_value/3]).
 
--include("emqx_auth_mongo.hrl").
 -include_lib("emqx/include/emqx.hrl").
 -include_lib("common_test/include/ct.hrl").
 -include_lib("eunit/include/eunit.hrl").
+
+-define(APP, emqx_auth_mongo).
 
 -define(POOL(App),  ecpool_worker:client(gproc_pool:pick_worker({ecpool, App}))).
 
@@ -48,7 +49,10 @@ groups() ->
      {auth_mongo_config, [sequence], [server_config]}].
 
 init_per_suite(Config) ->
-    [run_setup_steps(App) || App <- [emqx, emqx_auth_mongo]],
+    DataDir = proplists:get_value(data_dir, Config),
+    Apps = [start_apps(App, DataDir) || App <- [emqx, emqx_auth_mongo]],
+    ct:log("Apps:~p~n", [Apps]),
+
     {ok, Connection} = ecpool_worker:client(gproc_pool:pick_worker({ecpool, emqx_auth_mongo})),
     [{connection, Connection} | Config].
 
@@ -61,42 +65,43 @@ end_per_suite(Config) ->
     application:stop(emqx_auth_mongo),
     application:stop(emqttd).
 
-check_auth(Config) ->
+check_auth(_Config) ->
     {ok, Connection} = ?POOL(?APP),
     {ok, AppConfig} = application:get_env(emqx_auth_mongo, auth_query),
     Collection = collection(authquery, AppConfig),
     mongo_api:delete(Connection, Collection, {}),
-    mongo_api:insert(Connection, Collection, ?INIT_AUTH),
+    InitR = mongo_api:insert(Connection, Collection, ?INIT_AUTH),
+    ct:pal("init auth result: ~p~n", [InitR]),
 
-    Plain = #{client_id => <<"client1">>, username => <<"plain">>},
-    Plain1 = #{client_id => <<"client1">>, username => <<"plain2">>},
-    Md5 = #{client_id => <<"md5">>, username => <<"md5">>},
-    Sha = #{client_id => <<"sha">>, username => <<"sha">>},
-    Sha256 = #{client_id => <<"sha256">>, username => <<"sha256">>},
-    Pbkdf2 = #{client_id => <<"pbkdf2_password">>, username => <<"pbkdf2_password">>},
-    Bcrypt = #{client_id => <<"bcrypt_foo">>, username => <<"bcrypt_foo">>},
-    User1 = #{client_id => <<"bcrypt_foo">>, username => <<"user">>},
+    Plain = #{zone => external, client_id => <<"client1">>, username => <<"plain">>},
+    Plain1 = #{zone => external, client_id => <<"client1">>, username => <<"plain2">>},
+    Md5 = #{zone => external, client_id => <<"md5">>, username => <<"md5">>},
+    Sha = #{zone => external, client_id => <<"sha">>, username => <<"sha">>},
+    Sha256 = #{zone => external, client_id => <<"sha256">>, username => <<"sha256">>},
+    Pbkdf2 = #{zone => external, client_id => <<"pbkdf2_password">>, username => <<"pbkdf2_password">>},
+    Bcrypt = #{zone => external, client_id => <<"bcrypt_foo">>, username => <<"bcrypt_foo">>},
+    User1 = #{zone => external, client_id => <<"bcrypt_foo">>, username => <<"user">>},
     reload({auth_query, [{password_hash, plain}]}),
     %% With exactly username/password, connection success
-    {ok, true} = emqx_access_control:authenticate(Plain, <<"plain">>),
+    {ok, #{is_superuser := true}} = emqx_access_control:authenticate(Plain, <<"plain">>),
     %% With exactly username and wrong password, connection fail
-    {error, password_error} = emqx_access_control:authenticate(Plain, <<"error_pwd">>),
+    {error, _} = emqx_access_control:authenticate(Plain, <<"error_pwd">>),
     %% With wrong username and wrong password, emqx_auth_mongo auth fail, then allow anonymous authentication
-    ok = emqx_access_control:authenticate(Plain1, <<"error_pwd">>),
+    {error, _} = emqx_access_control:authenticate(Plain1, <<"error_pwd">>),
     %% With wrong username and exactly password, emqx_auth_mongo auth fail, then allow anonymous authentication
-    ok = emqx_access_control:authenticate(Plain1, <<"plain">>),
+    {error, _} = emqx_access_control:authenticate(Plain1, <<"plain">>),
     reload({auth_query, [{password_hash, md5}]}),
-    {ok, false} = emqx_access_control:authenticate(Md5, <<"md5">>),
+    {ok, #{is_superuser := false}} = emqx_access_control:authenticate(Md5, <<"md5">>),
     reload({auth_query, [{password_hash, sha}]}),
-    {ok, false} = emqx_access_control:authenticate(Sha, <<"sha">>),
+    {ok, #{is_superuser := false}} = emqx_access_control:authenticate(Sha, <<"sha">>),
     reload({auth_query, [{password_hash, sha256}]}),
-    {ok, false} = emqx_access_control:authenticate(Sha256, <<"sha256">>),
+    {ok, #{is_superuser := false}} = emqx_access_control:authenticate(Sha256, <<"sha256">>),
     %%pbkdf2 sha
     reload({auth_query, [{password_hash, {pbkdf2, sha, 1, 16}}, {password_field, [<<"password">>, <<"salt">>]}]}),
-    {ok, false} = emqx_access_control:authenticate(Pbkdf2, <<"password">>),
+    {ok, #{is_superuser := false}} = emqx_access_control:authenticate(Pbkdf2, <<"password">>),
     reload({auth_query, [{password_hash, {salt, bcrypt}}]}),
-    {ok, false} = emqx_access_control:authenticate(Bcrypt, <<"foo">>),
-    ok = emqx_access_control:authenticate(User1, <<"foo">>).
+    {ok, #{is_superuser := false}} = emqx_access_control:authenticate(Bcrypt, <<"foo">>),
+    {error, _} = emqx_access_control:authenticate(User1, <<"foo">>).
 
 list_auth(_Config) ->
     application:start(emqx_auth_username),
@@ -105,19 +110,21 @@ list_auth(_Config) ->
     ok = emqx_access_control:authenticate(User1, <<"password1">>),
     reload({auth_query, [{password_hash, plain}, {password_field, [<<"password">>]}]}),
     Plain = #{client_id => <<"client1">>, username => <<"plain">>},
-    {ok, true} = emqx_access_control:authenticate(Plain, <<"plain">>),
+    {ok, #{is_superuser := true}} = emqx_access_control:authenticate(Plain, <<"plain">>),
     application:stop(emqx_auth_username).
 
-check_acl(Config) ->
+check_acl(_Config) ->
+    ct:pal("acl cache enabled: ~p~n", [application:get_env(emqx, enable_acl_cache)]),
     {ok, Connection} = ?POOL(?APP),
     {ok, AppConfig} = application:get_env(?APP, acl_query),
     Collection = collection(aclquery, AppConfig),
     mongo_api:delete(Connection, Collection, {}),
-    mongo_api:insert(Connection, Collection, ?INIT_ACL),
-    User1 = #{client_id => <<"client1">>, username => <<"testuser">>},
-    User2 = #{client_id => <<"client2">>, username => <<"dashboard">>},
-    User3 = #{client_id => <<"client2">>, username => <<"user3">>},
-    User4 = #{client_id => <<"$$client2">>, username => <<"$$user3">>},
+    InitR = mongo_api:insert(Connection, Collection, ?INIT_ACL),
+    ct:pal("init acl result: ~p~n", [InitR]),
+    User1 = #{zone => external, client_id => <<"client1">>, username => <<"testuser">>},
+    User2 = #{zone => external, client_id => <<"client2">>, username => <<"dashboard">>},
+    User3 = #{zone => external, client_id => <<"client2">>, username => <<"user3">>},
+    User4 = #{zone => external, client_id => <<"$$client2">>, username => <<"$$user3">>},
     3 = mongo_api:count(Connection, Collection, {}, 17),
     %% ct log output
     %%ct_log(Connection, Collection, User1),
@@ -131,24 +138,24 @@ check_acl(Config) ->
 
 acl_super(_Config) ->
     reload({auth_query, [{password_hash, plain}]}),
-    {ok, C} = emqttc:start_link([{host, "localhost"},
-                                 {client_id, <<"simpleClient">>},
-                                 {username, <<"plain">>},
-                                 {password, <<"plain">>}]),
+    {ok, C, _} = emqx_client:start_link([{host, "localhost"},
+                                         {client_id, <<"simpleClient">>},
+                                         {username, <<"plain">>},
+                                         {password, <<"plain">>}]),
     timer:sleep(10),
-    emqttc:subscribe(C, <<"TopicA">>, qos2),
+    emqx_client:subscribe(C, <<"TopicA">>, qos2),
     timer:sleep(1000),
-    emqttc:publish(C, <<"TopicA">>, <<"Payload">>, qos2),
+    emqx_client:publish(C, <<"TopicA">>, <<"Payload">>, qos2),
     timer:sleep(1000),
     receive
-        {publish, Topic, Payload} ->
+        {publish, _Topic, Payload} ->
         ?assertEqual(<<"Payload">>, Payload)
     after
         1000 ->
         io:format("Error: receive timeout!~n"),
         ok
     end,
-    emqttc:disconnect(C).
+    emqx_client:disconnect(C).
 
 collection(Query, Config) ->
     iolist_to_binary(case Query of
@@ -232,44 +239,13 @@ find(Connection, Collection, Selector, Projector) ->
     mc_cursor:close(Cursor),
     Result.
 
-run_setup_steps(App) ->
-    NewConfig = generate_config(App),
-    lists:foreach(fun set_app_env/1, NewConfig),
+start_apps(App, DataDir) ->
+    Schema = cuttlefish_schema:files([filename:join([DataDir, atom_to_list(App) ++ ".schema"])]),
+    Conf = conf_parse:file(filename:join([DataDir, atom_to_list(App) ++ ".conf"])),
+    NewConfig = cuttlefish_generator:map(Schema, Conf),
+    Vals = proplists:get_value(App, NewConfig),
+    [application:set_env(App, Par, Value) || {Par, Value} <- Vals],
     application:ensure_all_started(App).
-
-generate_config(emqx) ->
-    Schema = cuttlefish_schema:files([local_path(["deps","emqx", "priv", "emqx.schema"])]),
-    Conf = conf_parse:file([local_path(["deps", "emqx","etc", "emqx.conf"])]),
-    cuttlefish_generator:map(Schema, Conf);
-
-generate_config(emqx_auth_mongo) ->
-    Schema = cuttlefish_schema:files([local_path(["priv", "emqx_auth_mongo.schema"])]),
-    Conf = conf_parse:file([local_path(["etc", "emqx_auth_mongo.conf"])]),
-    cuttlefish_generator:map(Schema, Conf).
-
-get_base_dir(Module) ->
-    {file, Here} = code:is_loaded(Module),
-    filename:dirname(filename:dirname(Here)).
-
-get_base_dir() ->
-    get_base_dir(?MODULE).
-
-local_path(Components, Module) ->
-    filename:join([get_base_dir(Module) | Components]).
-
-local_path(Components) ->
-    local_path(Components, ?MODULE).
-
-set_app_env({App, Lists}) ->
-    lists:foreach(fun({acl_file, _Var}) ->
-                        application:set_env(App, acl_file, local_path(["deps", "emqx", "etc", "acl.conf"]));
-                     ({license_file, _Var}) ->
-                        application:set_env(App, license_file, local_path(["deps", "emqx", "etc", "emqx.lic"]));
-                     ({plugins_loaded_file, _Var}) ->
-                        application:set_env(App, plugins_loaded_file, local_path(["deps","emqx","test", "emqx_SUITE_data","loaded_plugins"]));
-                     ({Par, Var}) ->
-                        application:set_env(App, Par, Var)
-                  end, Lists).
 
 reload({Par, Vals}) when is_list(Vals) ->
     application:stop(?APP),
@@ -283,4 +259,3 @@ reload({Par, Vals}) when is_list(Vals) ->
     end, TupleVals),
     application:set_env(?APP, Par, lists:append(NewVals, Vals)),
     application:start(?APP).
-
