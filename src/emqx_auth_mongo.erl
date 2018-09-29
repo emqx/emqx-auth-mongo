@@ -46,25 +46,11 @@ check(Credentials, Password, #{authquery := AuthQuery, superquery := SuperQuery}
         UserMap ->
             Result = case [maps:get(Field, UserMap, undefined) || Field <- Fields] of
                          [undefined] -> {error, password_error};
-                         [PassHash] -> check_pass(PassHash, Password, HashType);
-                         [PassHash, Salt|_] -> check_pass(PassHash, Salt, Password, HashType)
+                         [PassHash] -> emqx_passwd:check_pass({PassHash, Password}, HashType);
+                         [PassHash, Salt|_] -> emqx_passwd:check_pass({PassHash, Salt, Password}, HashType)
                      end,
             case Result of ok -> {ok, is_superuser(SuperQuery, Credentials)}; Error -> Error end
     end.
-
-check_pass(PassHash, Password, HashType) ->
-    check_pass(PassHash, emqx_passwd:hash(HashType, Password)).
-check_pass(PassHash, Salt, Password, {pbkdf2, Macfun, Iterations, Dklen}) ->
-    check_pass(PassHash, emqx_passwd:hash(pbkdf2, {Salt, Password, Macfun, Iterations, Dklen}));
-check_pass(PassHash, Salt, Password, {salt, bcrypt}) ->
-    check_pass(PassHash, emqx_passwd:hash(bcrypt, {Salt, Password}));
-check_pass(PassHash, Salt, Password, {salt, HashType}) ->
-    check_pass(PassHash, emqx_passwd:hash(HashType, <<Salt/binary, Password/binary>>));
-check_pass(PassHash, Salt, Password, {HashType, salt}) ->
-    check_pass(PassHash, emqx_passwd:hash(HashType, <<Password/binary, Salt/binary>>)).
-
-check_pass(PassHash, PassHash) -> ok;
-check_pass(_Hash1, _Hash2)     -> {error, password_error}.
 
 description() -> "Authentication with MongoDB".
 
