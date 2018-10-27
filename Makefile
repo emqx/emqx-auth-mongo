@@ -15,7 +15,6 @@ dep_cuttlefish = git https://github.com/emqtt/cuttlefish emqx30
 NO_AUTOPATCH = cuttlefish
 
 ERLC_OPTS += +debug_info
-ERLC_OPTS += +'{parse_transform, lager_transform}'
 
 TEST_DEPS = emqx_auth_username
 dep_emqx_auth_username = git https://github.com/emqx/emqx-auth-username emqx30
