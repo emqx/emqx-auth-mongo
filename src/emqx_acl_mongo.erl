@@ -42,7 +42,7 @@ check_acl({Credentials, PubSub, Topic}, #{aclquery := AclQuery}) ->
                 nomatch -> deny
             catch
                 Err:Reason->
-                    lager:error("Check mongo (~p) ACL failed, got ACL config: ~p, error: {~p:~p}",
+                    logger:error("Check mongo (~p) ACL failed, got ACL config: ~p, error: {~p:~p}",
                                 [PubSub, Rows, Err, Reason]),
                     ignore
             end
