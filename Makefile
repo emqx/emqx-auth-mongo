@@ -5,7 +5,7 @@ PROJECT_VERSION = 3.0
 DEPS = mongodb ecpool clique emqx_passwd
 dep_mongodb = git-emqx https://github.com/emqx/mongodb-erlang v3.0.7
 dep_ecpool  = git-emqx https://github.com/emqx/ecpool master
-dep_clique  = git-emqx https://github.com/emqx/clique
+dep_clique  = git-emqx https://github.com/emqx/clique develop
 dep_emqx_passwd = git-emqx https://github.com/emqx/emqx-passwd emqx30
 
 BUILD_DEPS = emqx cuttlefish
