@@ -9,7 +9,7 @@ dep_clique  = git-emqx https://github.com/emqx/clique
 dep_emqx_passwd = git-emqx https://github.com/emqx/emqx-passwd emqx30
 
 BUILD_DEPS = emqx cuttlefish
-dep_emqx = git-emqx https://github.com/emqtt/emqx emqx30
+dep_emqx = git-emqx https://github.com/emqx/emqx emqx30
 dep_cuttlefish = git-emqx https://github.com/emqx/cuttlefish emqx30
 
 NO_AUTOPATCH = cuttlefish
