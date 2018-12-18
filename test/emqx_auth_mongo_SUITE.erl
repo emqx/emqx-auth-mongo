@@ -68,7 +68,7 @@ end_per_suite(Config) ->
     mongo_api:delete(Connection, AuthCollection, {}),
     mongo_api:delete(Connection, AclCollection, {}),
     application:stop(emqx_auth_mongo),
-    application:stop(emqttd).
+    application:stop(emqx).
 
 get_base_dir() ->
     {file, Here} = code:is_loaded(?MODULE),
