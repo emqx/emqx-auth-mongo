@@ -17,4 +17,6 @@ test/ct.cover.spec
 data/
 cover/
 eunit.coverdata
+_build/
+rebar.lock
 
