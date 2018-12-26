@@ -1,5 +1,4 @@
-%%--------------------------------------------------------------------
-%% Copyright (c) 2013-2018 EMQ Enterprise, Inc. (http://emqtt.io)
+%% Copyright (c) 2018 EMQ Technologies Co., Ltd. All Rights Reserved.
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -12,55 +11,49 @@
 %% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
-%%--------------------------------------------------------------------
 
-%% @doc ACL with MongoDB.
--module(emq_acl_mongo).
+-module(emqx_acl_mongo).
 
--behaviour(emqttd_acl_mod).
+-behaviour(emqx_acl_mod).
 
--include("emq_auth_mongo.hrl").
-
--include_lib("emqttd/include/emqttd.hrl").
+-include("emqx_auth_mongo.hrl").
+-include_lib("emqx/include/emqx.hrl").
 
 %% ACL callbacks
 -export([init/1, check_acl/2, reload_acl/1, description/0]).
 
--record(state, {aclquery}).
-
 init(AclQuery) ->
-    {ok, #state{aclquery = AclQuery}}.
+    {ok, #{aclquery => AclQuery}}.
 
-check_acl({#mqtt_client{username = <<$$, _/binary>>}, _PubSub, _Topic}, _State) ->
+check_acl({#{username := <<$$, _/binary>>}, _PubSub, _Topic}, _State) ->
     ignore;
 
-check_acl({Client, PubSub, Topic}, #state{aclquery = AclQuery}) ->
+check_acl({Credentials, PubSub, Topic}, #{aclquery := AclQuery}) ->
     #aclquery{collection = Coll, selector = SelectorList} = AclQuery,
     SelectorMapList =
         lists:map(fun(Selector) ->
-            maps:from_list(emq_auth_mongo:replvars(Selector, Client))
+            maps:from_list(emqx_auth_mongo:replvars(Selector, Credentials))
         end, SelectorList),
-    case emq_auth_mongo:query_multi(Coll, SelectorMapList) of
-        [] ->
-            ignore;
+    case emqx_auth_mongo:query_multi(Coll, SelectorMapList) of
+        [] -> ignore;
         Rows ->
-            try match(Client, Topic, topics(PubSub, Rows)) of
+            try match(Credentials, Topic, topics(PubSub, Rows)) of
                 matched -> allow;
                 nomatch -> deny
             catch
-                ErrC:Err ->
-                    lager:error("check mongo (~p) ACL failed, got ACL config: ~p, error: {~p:~p}",
-                            [PubSub, Rows, ErrC, Err]),
+                Err:Reason->
+                    logger:error("Check mongo (~p) ACL failed, got ACL config: ~p, error: {~p:~p}",
+                                [PubSub, Rows, Err, Reason]),
                     ignore
             end
     end.
 
-match(_Client, _Topic, []) ->
+match(_Credentials, _Topic, []) ->
     nomatch;
-match(Client, Topic, [TopicFilter|More]) ->
-    case emqttd_topic:match(Topic, feedvar(Client, TopicFilter)) of
+match(Credentials, Topic, [TopicFilter|More]) ->
+    case emqx_topic:match(Topic, feedvar(Credentials, TopicFilter)) of
         true  -> matched;
-        false -> match(Client, Topic, More)
+        false -> match(Credentials, Topic, More)
     end.
 
 topics(publish, Rows) ->
@@ -75,7 +68,7 @@ topics(subscribe, Rows) ->
         lists:umerge(Acc, Topics)
     end, [], Rows).
 
-feedvar(#mqtt_client{client_id = ClientId, username = Username}, Str) ->
+feedvar(#{client_id := ClientId, username := Username}, Str) ->
     lists:foldl(fun({Var, Val}, Acc) ->
                     feedvar(Acc, Var, Val)
                 end, Str, [{"%u", Username}, {"%c", ClientId}]).
@@ -88,6 +81,5 @@ feedvar(Str, Var, Val) ->
 reload_acl(_State) ->
     ok.
 
-description() ->
-    "ACL with MongoDB".
+description() -> "ACL with MongoDB".
 

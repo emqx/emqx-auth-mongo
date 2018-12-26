@@ -1,5 +1,7 @@
 
--define(APP, emq_auth_mongo).
+-define(APP, emqx_auth_mongo).
+
+-define(DEFAULT_SELECTORS, [{<<"username">>, <<"%u">>}]).
 
 -define(DEFAULT_SELECTORS, [{<<"username">>, <<"%u">>}]).
 
@@ -14,4 +16,3 @@
 
 -record(aclquery, {collection = <<"mqtt_acl">>,
                    selector   = {<<"username">>, <<"%u">>}}).
-

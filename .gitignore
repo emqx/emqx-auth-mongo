@@ -10,11 +10,13 @@ rel/example_project
 .rebar
 .DS_Store
 .erlang.mk/
-emq_auth_mongo.d
+emqx_auth_mongo.d
 ct.coverdata
 logs/
 test/ct.cover.spec
 data/
 cover/
 eunit.coverdata
+_build/
+rebar.lock
 

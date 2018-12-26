@@ -1,5 +1,4 @@
-%%--------------------------------------------------------------------
-%% Copyright (c) 2013-2018 EMQ Enterprise, Inc. (http://emqtt.io)
+%% Copyright (c) 2018 EMQ Technologies Co., Ltd. All Rights Reserved.
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -12,15 +11,12 @@
 %% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
-%%--------------------------------------------------------------------
 
--module(emq_auth_mongo_app).
-
--author("Feng Lee<feng@emqtt.io").
-
--include("emq_auth_mongo.hrl").
+-module(emqx_auth_mongo_app).
 
 -behaviour(application).
+
+-include("emqx_auth_mongo.hrl").
 
 -import(proplists, [get_value/3]).
 
@@ -28,19 +24,19 @@
 -export([start/2, prep_stop/1, stop/1]).
 
 %%--------------------------------------------------------------------
-%% Application Callbacks
+%% Application callbacks
 %%--------------------------------------------------------------------
 
 start(_StartType, _StartArgs) ->
-    {ok, Sup} = emq_auth_mongo_sup:start_link(),
+    {ok, Sup} = emqx_auth_mongo_sup:start_link(),
     with_env(auth_query, fun reg_authmod/1),
     with_env(acl_query,  fun reg_aclmod/1),
-    emq_auth_mongo_config:register(),
+    emqx_auth_mongo_cfg:register(),
     {ok, Sup}.
 
 prep_stop(State) ->
-    emqttd_access_control:unregister_mod(acl, emq_acl_mongo),
-    emqttd_access_control:unregister_mod(auth, emq_auth_mongo),
+    emqx_access_control:unregister_mod(acl, emqx_acl_mongo),
+    emqx_access_control:unregister_mod(auth, emqx_auth_mongo),
     State.
 
 stop(_State) ->
@@ -48,14 +44,14 @@ stop(_State) ->
 
 reg_authmod(AuthQuery) ->
     SuperQuery = r(super_query, application:get_env(?APP, super_query, undefined)),
-    emqttd_access_control:register_mod(auth, emq_auth_mongo, {AuthQuery, SuperQuery}),
-    emq_auth_mongo_config:unregister().
+    emqx_access_control:register_mod(auth, emqx_auth_mongo, {AuthQuery, SuperQuery}),
+    emqx_auth_mongo_cfg:unregister().
 
 reg_aclmod(AclQuery) ->
-    emqttd_access_control:register_mod(acl, emq_acl_mongo, AclQuery).
+    emqx_access_control:register_mod(acl, emqx_acl_mongo, AclQuery).
 
 %%--------------------------------------------------------------------
-%% Internal Functions
+%% Internal functions
 %%--------------------------------------------------------------------
 
 with_env(Name, Fun) ->
@@ -64,7 +60,7 @@ with_env(Name, Fun) ->
         {ok, Config} -> Fun(r(Name, Config))
     end.
 
-r(super_query, undefined) -> 
+r(super_query, undefined) ->
     undefined;
 r(super_query, Config) ->
     #superquery{collection = list_to_binary(get_value(collection, Config, "mqtt_user")),

@@ -1,8 +1,7 @@
+emqx_auth_mongo
+===============
 
-emq-auth-mongo
-==============
-
-Authentication, ACL with MongoDB
+EMQ X Authentication/ACL with MongoDB
 
 Build the Plugin
 ----------------
@@ -14,7 +13,7 @@ make & make tests
 Configuration
 -------------
 
-File: etc/emq_auth_mongo.conf
+File: etc/emqx_auth_mongo.conf
 
 ```
 ## MongoDB Topology Type.
@@ -129,7 +128,7 @@ Load the Plugin
 ---------------
 
 ```
-./bin/emqttd_ctl plugins load emq_auth_mongo
+./bin/emqx_ctl plugins load emqx_auth_mongo
 ```
 
 MongoDB Database

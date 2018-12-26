@@ -1,5 +1,4 @@
-%%--------------------------------------------------------------------
-%% Copyright (c) 2013-2018 EMQ Enterprise, Inc. (http://emqtt.io)
+%% Copyright (c) 2018 EMQ Technologies Co., Ltd. All Rights Reserved.
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -12,16 +11,14 @@
 %% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
-%%--------------------------------------------------------------------
 
-%% @doc Authentication with MongoDB.
--module(emq_auth_mongo).
+-module(emqx_auth_mongo).
 
--behaviour(emqttd_auth_mod).
+-behaviour(emqx_auth_mod).
 
--include("emq_auth_mongo.hrl").
+-include("emqx_auth_mongo.hrl").
 
--include_lib("emqttd/include/emqttd.hrl").
+-include_lib("emqx/include/emqx.hrl").
 
 -export([init/1, check/3, description/0]).
 
@@ -29,8 +26,6 @@
 
 -export([replvar/2, replvars/2, connect/1, query/2, query_multi/2]).
 
--record(state, {authquery, superquery}).
- 
 -define(EMPTY(Username), (Username =:= undefined orelse Username =:= <<>>)).
 
 %%--------------------------------------------------------------------
@@ -38,44 +33,38 @@
 %%--------------------------------------------------------------------
 
 init({AuthQuery, SuperQuery}) ->
-  {ok, #state{authquery = AuthQuery, superquery = SuperQuery}}.
+    {ok, #{authquery => AuthQuery, superquery => SuperQuery}}.
 
-check(#mqtt_client{username = Username}, Password, _State) when ?EMPTY(Username); ?EMPTY(Password) ->
+check(#{username := Username}, Password, _State) when ?EMPTY(Username); ?EMPTY(Password) ->
     {error, username_or_password_undefined};
 
-check(Client, Password, #state{authquery = AuthQuery, superquery = SuperQuery}) ->
+check(Credentials, Password, #{authquery := AuthQuery, superquery := SuperQuery}) ->
     #authquery{collection = Collection, field = Fields,
                hash = HashType, selector = Selector} = AuthQuery,
-    case query(Collection, maps:from_list(replvars(Selector, Client))) of
+    case query(Collection, maps:from_list(replvars(Selector, Credentials))) of
         undefined -> ignore;
         UserMap ->
             Result = case [maps:get(Field, UserMap, undefined) || Field <- Fields] of
-                [undefined] -> {error, password_error};
-                [PassHash] -> check_pass(PassHash, Password, HashType);
-                [PassHash, Salt|_] -> check_pass(PassHash, Salt, Password, HashType)
-            end,
-            case Result of
-                ok -> {ok, is_superuser(SuperQuery, Client)};
-                Error -> Error
-            end
+                         [undefined] -> {error, password_error};
+                         [PassHash] -> check_pass(PassHash, Password, HashType);
+                         [PassHash, Salt|_] -> check_pass(PassHash, Salt, Password, HashType)
+                     end,
+            case Result of ok -> {ok, is_superuser(SuperQuery, Credentials)}; Error -> Error end
     end.
 
-
 check_pass(PassHash, Password, HashType) ->
-    check_pass(PassHash, hash(HashType, Password)).
+    check_pass(PassHash, emqx_passwd:hash(HashType, Password)).
 check_pass(PassHash, Salt, Password, {pbkdf2, Macfun, Iterations, Dklen}) ->
-    check_pass(PassHash, hash(pbkdf2, {Salt, Password, Macfun, Iterations, Dklen}));
+    check_pass(PassHash, emqx_passwd:hash(pbkdf2, {Salt, Password, Macfun, Iterations, Dklen}));
 check_pass(PassHash, Salt, Password, {salt, bcrypt}) ->
-    check_pass(PassHash, hash(bcrypt, {Salt, Password}));
+    check_pass(PassHash, emqx_passwd:hash(bcrypt, {Salt, Password}));
 check_pass(PassHash, Salt, Password, {salt, HashType}) ->
-    check_pass(PassHash, hash(HashType, <<Salt/binary, Password/binary>>));
+    check_pass(PassHash, emqx_passwd:hash(HashType, <<Salt/binary, Password/binary>>));
 check_pass(PassHash, Salt, Password, {HashType, salt}) ->
-    check_pass(PassHash, hash(HashType, <<Password/binary, Salt/binary>>)).
+    check_pass(PassHash, emqx_passwd:hash(HashType, <<Password/binary, Salt/binary>>)).
 
 check_pass(PassHash, PassHash) -> ok;
-check_pass(_, _)               -> {error, password_error}.
-
-hash(Type, Password) -> emqttd_auth_mod:passwd_hash(Type, Password).
+check_pass(_Hash1, _Hash2)     -> {error, password_error}.
 
 description() -> "Authentication with MongoDB".
 
@@ -83,24 +72,22 @@ description() -> "Authentication with MongoDB".
 %% Is Superuser?
 %%--------------------------------------------------------------------
 
--spec(is_superuser(undefined | list(), mqtt_client()) -> boolean()).
-is_superuser(undefined, _MqttClient) ->
+-spec(is_superuser(undefined | #superquery{}, emqx_types:credentials()) -> boolean()).
+is_superuser(undefined, _Credentials) ->
     false;
-is_superuser(#superquery{collection = Coll, field = Field, selector = Selector}, Client) ->
-    Row = query(Coll, maps:from_list(replvars(Selector, Client))),
+is_superuser(#superquery{collection = Coll, field = Field, selector = Selector}, Credentials) ->
+    Row = query(Coll, maps:from_list(replvars(Selector, Credentials))),
     case maps:get(Field, Row, false) of
         true   -> true;
         _False -> false
     end.
 
-replvars(VarList, MqttClient) ->
-   lists:map(fun(Var) ->
-           replvar(Var, MqttClient)
-       end, VarList).
+replvars(VarList, Credentials) ->
+    lists:map(fun(Var) -> replvar(Var, Credentials) end, VarList).
 
-replvar({Field, <<"%u">>}, #mqtt_client{username = Username}) ->
+replvar({Field, <<"%u">>}, #{username := Username}) ->
     {Field, Username};
-replvar({Field, <<"%c">>}, #mqtt_client{client_id = ClientId}) ->
+replvar({Field, <<"%c">>}, #{client_id := ClientId}) ->
     {Field, ClientId};
 replvar(Selector, _Client) ->
     Selector.
