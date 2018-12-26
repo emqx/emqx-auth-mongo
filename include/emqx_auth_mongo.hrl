@@ -3,8 +3,6 @@
 
 -define(DEFAULT_SELECTORS, [{<<"username">>, <<"%u">>}]).
 
--define(DEFAULT_SELECTORS, [{<<"username">>, <<"%u">>}]).
-
 -record(superquery, {collection = <<"mqtt_user">>,
                      field      = <<"is_superuser">>,
                      selector   = {<<"username">>, <<"%u">>}}).
