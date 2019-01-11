@@ -30,5 +30,10 @@ include erlang.mk
 
 app:: rebar.config
 
+ct: emqx/gen.emqx.conf
+
+emqx/gen.emqx.conf:
+	cd deps/emqx && make etc/gen.emqx.conf && cd -
+	
 app.config::
 	./deps/cuttlefish/cuttlefish -l info -e etc/ -c etc/emqx_auth_mongo.conf -i priv/emqx_auth_mongo.schema -d data
