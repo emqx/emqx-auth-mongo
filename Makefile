@@ -10,7 +10,7 @@ dep_emqx_passwd = git-emqx https://github.com/emqx/emqx-passwd v1.0
 
 BUILD_DEPS = emqx cuttlefish
 dep_emqx = git-emqx https://github.com/emqx/emqx emqx30
-dep_cuttlefish = git-emqx https://github.com/emqx/cuttlefish v2.2.0
+dep_cuttlefish = git-emqx https://github.com/emqx/cuttlefish v2.2.1
 
 NO_AUTOPATCH = cuttlefish
 
@@ -29,11 +29,6 @@ endef
 include erlang.mk
 
 app:: rebar.config
-
-ct: emqx/gen.emqx.conf
-
-emqx/gen.emqx.conf:
-	cd deps/emqx && make etc/gen.emqx.conf && cd -
 	
 app.config::
 	./deps/cuttlefish/cuttlefish -l info -e etc/ -c etc/emqx_auth_mongo.conf -i priv/emqx_auth_mongo.schema -d data
