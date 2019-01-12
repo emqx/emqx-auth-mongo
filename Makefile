@@ -25,6 +25,6 @@ $(shell [ -f erlang.mk ] || curl -s -o erlang.mk https://raw.githubusercontent.c
 include erlang.mk
 
 app:: rebar.config
-
+	
 app.config::
 	./deps/cuttlefish/cuttlefish -l info -e etc/ -c etc/emqx_auth_mongo.conf -i priv/emqx_auth_mongo.schema -d data
