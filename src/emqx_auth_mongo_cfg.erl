@@ -49,7 +49,7 @@ formatter_callback([_, _, "password"], Params) ->
 formatter_callback([_, _, Key], Params) ->
     proplists:get_value(list_to_atom(Key), Params);
 formatter_callback([_, _, _, "password_hash"], Params) ->
-    format(tuple_to_list(proplists:get_value(password_hash, Params)));
+    format(atom_to_list(proplists:get_value(password_hash, Params)));
 formatter_callback([_, _, _, "password_field"], Params) ->
     format([binary_to_list(Field) || Field <- proplists:get_value(password_field, Params)]);
 formatter_callback([_, _, _, Key], Params) ->
