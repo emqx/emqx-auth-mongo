@@ -154,6 +154,7 @@ keys() ->
      "auth.mongo.super_query.collection",
      "auth.mongo.super_query.super_field",
      "auth.mongo.super_query.selector",
+     "auth.mongo.acl_query.collection",
      "auth.mongo.acl_query.selector"].
 
 format(Value) ->
