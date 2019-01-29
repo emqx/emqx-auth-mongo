@@ -1,6 +1,6 @@
 PROJECT = emqx_auth_mongo
 PROJECT_DESCRIPTION = EMQ X Authentication/ACL with MongoDB
-PROJECT_VERSION = 3.0
+PROJECT_VERSION = 3.1
 
 DEPS = mongodb ecpool clique emqx_passwd
 dep_mongodb = git-emqx https://github.com/emqx/mongodb-erlang v3.0.7
