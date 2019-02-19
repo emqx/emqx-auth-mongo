@@ -1,0 +1,7 @@
+{application,emqx_auth_mongo,
+             [{description,"EMQ X Authentication/ACL with MongoDB"},
+              {vsn,"git"},
+              {modules,[]},
+              {registered,[emqx_auth_mongo_sup]},
+              {applications,[kernel,stdlib,mongodb,ecpool,clique,emqx_passwd]},
+              {mod,{emqx_auth_mongo_app,[]}}]}.
