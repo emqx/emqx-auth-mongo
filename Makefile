@@ -19,7 +19,7 @@ NO_AUTOPATCH = cuttlefish
 ERLC_OPTS += +debug_info
 
 TEST_DEPS = emqx_auth_username
-dep_emqx_auth_username = git-emqx https://github.com/emqx/emqx-auth-username develop
+dep_emqx_auth_username = git-emqx https://github.com/emqx/emqx-auth-username release-3.1
 
 COVER = true
 
