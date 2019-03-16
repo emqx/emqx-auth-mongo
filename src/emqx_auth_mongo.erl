@@ -14,13 +14,11 @@
 
 -module(emqx_auth_mongo).
 
--behaviour(emqx_auth_mod).
-
 -include("emqx_auth_mongo.hrl").
 
 -include_lib("emqx/include/emqx.hrl").
 
--export([init/1, check/3, description/0]).
+-export([check/2, description/0]).
 
 -behaviour(ecpool_worker).
 
@@ -28,32 +26,33 @@
 
 -define(EMPTY(Username), (Username =:= undefined orelse Username =:= <<>>)).
 
-%%--------------------------------------------------------------------
-%% Auth Mod Callback
-%%--------------------------------------------------------------------
+check(Credentials = #{username := Username, password := Password}, _Config)
+        when ?EMPTY(Username); ?EMPTY(Password) ->
+    {ok, Credentials#{result => username_or_password_undefined}};
 
-init({AuthQuery, SuperQuery}) ->
-    {ok, #{authquery => AuthQuery, superquery => SuperQuery}}.
-
-check(#{username := Username}, Password, _State) when ?EMPTY(Username); ?EMPTY(Password) ->
-    {error, username_or_password_undefined};
-
-check(Credentials, Password, #{authquery := AuthQuery, superquery := SuperQuery}) ->
+check(Credentials = #{password := Password}, #{authquery := AuthQuery, superquery := SuperQuery}) ->
     #authquery{collection = Collection, field = Fields,
                hash = HashType, selector = Selector} = AuthQuery,
     case query(Collection, maps:from_list(replvars(Selector, Credentials))) of
-        undefined -> ignore;
+        undefined -> ok;
         UserMap ->
             Result = case [maps:get(Field, UserMap, undefined) || Field <- Fields] of
-                         [undefined] -> {error, password_error};
-                         [PassHash] -> check_pass(PassHash, Password, HashType);
-                         [PassHash, Salt|_] -> check_pass(PassHash, Salt, Password, HashType)
+                        [undefined] -> {error, password_error};
+                        [PassHash] -> check_pass(PassHash, Password, HashType);
+                        [PassHash, Salt|_] -> check_pass(PassHash, Salt, Password, HashType)
                      end,
-            case Result of ok -> {ok, is_superuser(SuperQuery, Credentials)}; Error -> Error end
+            case Result of
+                ok -> {stop, Credentials#{is_superuser => is_superuser(SuperQuery, Credentials),
+                                          result => success}};
+                {error, Error} -> {stop, Credentials#{result => Error}}
+            end
     end.
 
 check_pass(PassHash, Password, HashType) ->
     check_pass(PassHash, emqx_passwd:hash(HashType, Password)).
+
+check_pass(PassHash, _Salt, Password, plain) ->
+    check_pass(PassHash, Password, plain);
 check_pass(PassHash, Salt, Password, {pbkdf2, Macfun, Iterations, Dklen}) ->
     check_pass(PassHash, emqx_passwd:hash(pbkdf2, {Salt, Password, Macfun, Iterations, Dklen}));
 check_pass(PassHash, Salt, Password, {salt, bcrypt}) ->

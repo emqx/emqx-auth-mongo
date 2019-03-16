@@ -16,7 +16,7 @@
 
 -export([register/0, unregister/0]).
 
--define(APP, emqx_auth_mongo).
+-include("emqx_auth_mongo.hrl").
 
 register() ->
     clique_config:load_schema([code:priv_dir(?APP)], ?APP),
