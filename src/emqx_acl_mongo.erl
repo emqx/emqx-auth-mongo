@@ -14,32 +14,27 @@
 
 -module(emqx_acl_mongo).
 
--behaviour(emqx_acl_mod).
-
 -include("emqx_auth_mongo.hrl").
 -include_lib("emqx/include/emqx.hrl").
 
 %% ACL callbacks
--export([init/1, check_acl/2, reload_acl/1, description/0]).
+-export([check_acl/5, reload_acl/1, description/0]).
 
-init(AclQuery) ->
-    {ok, #{aclquery => AclQuery}}.
+check_acl(#{username := <<$$, _/binary>>}, _PubSub, _Topic, AclResult, _State) ->
+    ok;
 
-check_acl({#{username := <<$$, _/binary>>}, _PubSub, _Topic}, _State) ->
-    ignore;
-
-check_acl({Credentials, PubSub, Topic}, #{aclquery := AclQuery}) ->
+check_acl(Credentials, PubSub, Topic, _AclResult, #{aclquery := AclQuery}) ->
     #aclquery{collection = Coll, selector = SelectorList} = AclQuery,
     SelectorMapList =
         lists:map(fun(Selector) ->
             maps:from_list(emqx_auth_mongo:replvars(Selector, Credentials))
         end, SelectorList),
     case emqx_auth_mongo:query_multi(Coll, SelectorMapList) of
-        [] -> ignore;
+        [] -> ok;
         Rows ->
             try match(Credentials, Topic, topics(PubSub, Rows)) of
-                matched -> allow;
-                nomatch -> deny
+                matched -> {stop, allow};
+                nomatch -> {stop, deny}
             catch
                 Err:Reason->
                     logger:error("Check mongo (~p) ACL failed, got ACL config: ~p, error: {~p:~p}",

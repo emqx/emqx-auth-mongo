@@ -23,6 +23,9 @@
 %% Application callbacks
 -export([start/2, prep_stop/1, stop/1]).
 
+-define(ACTION_AUTH(A), {emqx_auth_mongo, check, A}).
+-define(ACTION_ACL(A), {emqx_acl_mongo, check_acl, A}).
+
 %%--------------------------------------------------------------------
 %% Application callbacks
 %%--------------------------------------------------------------------
@@ -35,8 +38,8 @@ start(_StartType, _StartArgs) ->
     {ok, Sup}.
 
 prep_stop(State) ->
-    emqx_access_control:unregister_mod(acl, emqx_acl_mongo),
-    emqx_access_control:unregister_mod(auth, emqx_auth_mongo),
+    ok = emqx:unhook('client.authenticate', fun emqx_auth_mongo:check/2),
+    ok = emqx:unhook('client.check_acl', fun emqx_acl_mongo:check_acl/5),
     State.
 
 stop(_State) ->
@@ -44,11 +47,11 @@ stop(_State) ->
 
 reg_authmod(AuthQuery) ->
     SuperQuery = r(super_query, application:get_env(?APP, super_query, undefined)),
-    emqx_access_control:register_mod(auth, emqx_auth_mongo, {AuthQuery, SuperQuery}),
+    ok = emqx:hook('client.authenticate', fun emqx_auth_mongo:check/2, [#{authquery => AuthQuery, superquery => SuperQuery}]),
     emqx_auth_mongo_cfg:unregister().
 
 reg_aclmod(AclQuery) ->
-    emqx_access_control:register_mod(acl, emqx_acl_mongo, AclQuery).
+    ok = emqx:hook('client.check_acl', fun emqx_acl_mongo:check_acl/5, [#{aclquery => AclQuery}]).
 
 %%--------------------------------------------------------------------
 %% Internal functions
