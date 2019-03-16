@@ -23,9 +23,6 @@
 %% Application callbacks
 -export([start/2, prep_stop/1, stop/1]).
 
--define(ACTION_AUTH(A), {emqx_auth_mongo, check, A}).
--define(ACTION_ACL(A), {emqx_acl_mongo, check_acl, A}).
-
 %%--------------------------------------------------------------------
 %% Application callbacks
 %%--------------------------------------------------------------------
