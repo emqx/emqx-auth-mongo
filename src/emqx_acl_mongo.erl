@@ -20,7 +20,7 @@
 %% ACL callbacks
 -export([check_acl/5, reload_acl/1, description/0]).
 
-check_acl(#{username := <<$$, _/binary>>}, _PubSub, _Topic, AclResult, _State) ->
+check_acl(#{username := <<$$, _/binary>>}, _PubSub, _Topic, _AclResult, _State) ->
     ok;
 
 check_acl(Credentials, PubSub, Topic, _AclResult, #{aclquery := AclQuery}) ->
