@@ -91,6 +91,9 @@ read_schema_configs(App, {SchemaFile, ConfigFile}) ->
     [application:set_env(App, Par, Value) || {Par, Value} <- Vals].
 
 set_special_configs(emqx) ->
+    application:set_env(emqx, acl_nomatch, deny),
+    application:set_env(emqx, acl_file,
+                        local_path("deps/emqx/test/emqx_SUITE_data/acl.conf")),
     application:set_env(emqx, allow_anonymous, false),
     application:set_env(emqx, enable_acl_cache, false),
     application:set_env(emqx, plugins_loaded_file,
@@ -116,34 +119,34 @@ check_auth(_Config) ->
     User1 = #{zone => external, client_id => <<"bcrypt_foo">>, username => <<"user">>},
     reload({auth_query, [{password_hash, plain}]}),
     %% With exactly username/password, connection success
-    {ok, #{is_superuser := true}} = emqx_access_control:authenticate(Plain, <<"plain">>),
+    {ok, #{is_superuser := true}} = emqx_access_control:authenticate(Plain#{password => <<"plain">>}),
     %% With exactly username and wrong password, connection fail
-    {error, _} = emqx_access_control:authenticate(Plain, <<"error_pwd">>),
+    {error, _} = emqx_access_control:authenticate(Plain#{password => <<"error_pwd">>}),
     %% With wrong username and wrong password, emqx_auth_mongo auth fail, then allow anonymous authentication
-    {error, _} = emqx_access_control:authenticate(Plain1, <<"error_pwd">>),
+    {error, _} = emqx_access_control:authenticate(Plain1#{password => <<"error_pwd">>}),
     %% With wrong username and exactly password, emqx_auth_mongo auth fail, then allow anonymous authentication
-    {error, _} = emqx_access_control:authenticate(Plain1, <<"plain">>),
+    {error, _} = emqx_access_control:authenticate(Plain1#{password => <<"plain">>}),
     reload({auth_query, [{password_hash, md5}]}),
-    {ok, #{is_superuser := false}} = emqx_access_control:authenticate(Md5, <<"md5">>),
+    {ok, #{is_superuser := false}} = emqx_access_control:authenticate(Md5#{password => <<"md5">>}),
     reload({auth_query, [{password_hash, sha}]}),
-    {ok, #{is_superuser := false}} = emqx_access_control:authenticate(Sha, <<"sha">>),
+    {ok, #{is_superuser := false}} = emqx_access_control:authenticate(Sha#{password => <<"sha">>}),
     reload({auth_query, [{password_hash, sha256}]}),
-    {ok, #{is_superuser := false}} = emqx_access_control:authenticate(Sha256, <<"sha256">>),
+    {ok, #{is_superuser := false}} = emqx_access_control:authenticate(Sha256#{password => <<"sha256">>}),
     %%pbkdf2 sha
     reload({auth_query, [{password_hash, {pbkdf2, sha, 1, 16}}, {password_field, [<<"password">>, <<"salt">>]}]}),
-    {ok, #{is_superuser := false}} = emqx_access_control:authenticate(Pbkdf2, <<"password">>),
+    {ok, #{is_superuser := false}} = emqx_access_control:authenticate(Pbkdf2#{password => <<"password">>}),
     reload({auth_query, [{password_hash, {salt, bcrypt}}]}),
-    {ok, #{is_superuser := false}} = emqx_access_control:authenticate(Bcrypt, <<"foo">>),
-    {error, _} = emqx_access_control:authenticate(User1, <<"foo">>).
+    {ok, #{is_superuser := false}} = emqx_access_control:authenticate(Bcrypt#{password => <<"foo">>}),
+    {error, _} = emqx_access_control:authenticate(User1#{password => <<"foo">>}).
 
 list_auth(_Config) ->
     application:start(emqx_auth_username),
     emqx_auth_username:add_user(<<"user1">>, <<"password1">>),
     User1 = #{client_id => <<"client1">>, username => <<"user1">>},
-    ok = emqx_access_control:authenticate(User1, <<"password1">>),
+    {ok, _} = emqx_access_control:authenticate(User1#{password => <<"password1">>}),
     reload({auth_query, [{password_hash, plain}, {password_field, [<<"password">>]}]}),
     Plain = #{client_id => <<"client1">>, username => <<"plain">>},
-    {ok, #{is_superuser := true}} = emqx_access_control:authenticate(Plain, <<"plain">>),
+    {ok, #{is_superuser := true}} = emqx_access_control:authenticate(Plain#{password => <<"plain">>}),
     application:stop(emqx_auth_username).
 
 check_acl(_Config) ->
