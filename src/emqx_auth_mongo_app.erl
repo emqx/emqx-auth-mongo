@@ -21,7 +21,9 @@
 -import(proplists, [get_value/3]).
 
 %% Application callbacks
--export([start/2, prep_stop/1, stop/1]).
+-export([start/2,
+         prep_stop/1,
+         stop/1]).
 
 %%--------------------------------------------------------------------
 %% Application callbacks
