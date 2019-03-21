@@ -16,6 +16,8 @@
 
 -behaviour(application).
 
+-emqx_plugin(?MODULE).
+
 -include("emqx_auth_mongo.hrl").
 
 -import(proplists, [get_value/3]).

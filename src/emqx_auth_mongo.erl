@@ -28,7 +28,7 @@
 
 check(Credentials = #{username := Username, password := Password}, _Config)
         when ?EMPTY(Username); ?EMPTY(Password) ->
-    {ok, Credentials#{result => username_or_password_undefined}};
+    {ok, Credentials#{auth_result => bad_username_or_password}};
 
 check(Credentials = #{password := Password}, #{authquery := AuthQuery, superquery := SuperQuery}) ->
     #authquery{collection = Collection, field = Fields,
@@ -43,8 +43,8 @@ check(Credentials = #{password := Password}, #{authquery := AuthQuery, superquer
                      end,
             case Result of
                 ok -> {stop, Credentials#{is_superuser => is_superuser(SuperQuery, Credentials),
-                                          result => success}};
-                {error, Error} -> {stop, Credentials#{result => Error}}
+                                          auth_result => success}};
+                {error, Error} -> {stop, Credentials#{auth_result => Error}}
             end
     end.
 
