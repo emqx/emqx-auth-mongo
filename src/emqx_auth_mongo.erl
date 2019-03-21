@@ -18,11 +18,16 @@
 
 -include_lib("emqx/include/emqx.hrl").
 
--export([check/2, description/0]).
+-export([check/2,
+         description/0]).
 
 -behaviour(ecpool_worker).
 
--export([replvar/2, replvars/2, connect/1, query/2, query_multi/2]).
+-export([replvar/2,
+         replvars/2,
+         connect/1,
+         query/2,
+         query_multi/2]).
 
 -define(EMPTY(Username), (Username =:= undefined orelse Username =:= <<>>)).
 
@@ -38,8 +43,10 @@ check(Credentials = #{password := Password}, #{authquery := AuthQuery, superquer
         UserMap ->
             Result = case [maps:get(Field, UserMap, undefined) || Field <- Fields] of
                         [undefined] -> {error, password_error};
-                        [PassHash] -> check_pass(PassHash, Password, HashType);
-                        [PassHash, Salt|_] -> check_pass(PassHash, Salt, Password, HashType)
+                        [PassHash] ->
+                            check_pass({PassHash, Password}, HashType);
+                        [PassHash, Salt|_] ->
+                            check_pass({PassHash, Salt, Password}, HashType)
                      end,
             case Result of
                 ok -> {stop, Credentials#{is_superuser => is_superuser(SuperQuery, Credentials),
@@ -48,22 +55,11 @@ check(Credentials = #{password := Password}, #{authquery := AuthQuery, superquer
             end
     end.
 
-check_pass(PassHash, Password, HashType) ->
-    check_pass(PassHash, emqx_passwd:hash(HashType, Password)).
-
-check_pass(PassHash, _Salt, Password, plain) ->
-    check_pass(PassHash, Password, plain);
-check_pass(PassHash, Salt, Password, {pbkdf2, Macfun, Iterations, Dklen}) ->
-    check_pass(PassHash, emqx_passwd:hash(pbkdf2, {Salt, Password, Macfun, Iterations, Dklen}));
-check_pass(PassHash, Salt, Password, {salt, bcrypt}) ->
-    check_pass(PassHash, emqx_passwd:hash(bcrypt, {Salt, Password}));
-check_pass(PassHash, Salt, Password, {salt, HashType}) ->
-    check_pass(PassHash, emqx_passwd:hash(HashType, <<Salt/binary, Password/binary>>));
-check_pass(PassHash, Salt, Password, {HashType, salt}) ->
-    check_pass(PassHash, emqx_passwd:hash(HashType, <<Password/binary, Salt/binary>>)).
-
-check_pass(PassHash, PassHash) -> ok;
-check_pass(_Hash1, _Hash2)     -> {error, password_error}.
+check_pass(Password, HashType) ->
+    case emqx_passwd:check_pass(Password, HashType) of
+        ok -> ok;
+        {error, _Reason} -> {error, not_authorized}
+    end.
 
 description() -> "Authentication with MongoDB".
 
