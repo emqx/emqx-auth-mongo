@@ -19,6 +19,7 @@
 -include("emqx_auth_mongo.hrl").
 
 -export([start_link/0]).
+
 -export([init/1]).
 
 start_link() ->
