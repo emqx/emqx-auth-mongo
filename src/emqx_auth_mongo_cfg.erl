@@ -14,8 +14,9 @@
 
 -module(emqx_auth_mongo_cfg).
 
--export([register/0,
-         unregister/0]).
+-export([ register/0
+        , unregister/0
+        ]).
 
 -include("emqx_auth_mongo.hrl").
 

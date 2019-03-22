@@ -18,16 +18,17 @@
 
 -include_lib("emqx/include/emqx.hrl").
 
--export([check/2,
-         description/0]).
+-export([ check/2
+        , description/0]).
 
 -behaviour(ecpool_worker).
 
--export([replvar/2,
-         replvars/2,
-         connect/1,
-         query/2,
-         query_multi/2]).
+-export([ replvar/2
+        , replvars/2
+        , connect/1
+        , query/2
+        , query_multi/2
+        ]).
 
 -define(EMPTY(Username), (Username =:= undefined orelse Username =:= <<>>)).
 
