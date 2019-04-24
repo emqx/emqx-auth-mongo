@@ -16,6 +16,7 @@
 
 -include("emqx_auth_mongo.hrl").
 -include_lib("emqx/include/emqx.hrl").
+-include_lib("emqx/include/logger.hrl").
 
 %% ACL callbacks
 -export([ check_acl/5
@@ -39,12 +40,13 @@ check_acl(Credentials, PubSub, Topic, _AclResult, #{aclquery := AclQuery}) ->
                 matched -> {stop, allow};
                 nomatch -> {stop, deny}
             catch
-                Err:Reason->
-                    logger:error("Check mongo (~p) ACL failed, got ACL config: ~p, error: {~p:~p}",
-                                [PubSub, Rows, Err, Reason]),
+                _Err:Reason->
+                    ?LOG(error, "[MongoDB] Check mongo ~p ACL failed, got ACL config: ~p, error: :~p",
+                                [PubSub, Rows, Reason]),
                     ignore
             end
     end.
+
 
 match(_Credentials, _Topic, []) ->
     nomatch;
