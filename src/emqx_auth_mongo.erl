@@ -17,6 +17,7 @@
 -include("emqx_auth_mongo.hrl").
 
 -include_lib("emqx/include/emqx.hrl").
+-include_lib("emqx/include/logger.hrl").
 
 -export([ check/2
         , description/0]).
@@ -52,7 +53,9 @@ check(Credentials = #{password := Password}, #{authquery := AuthQuery, superquer
             case Result of
                 ok -> {stop, Credentials#{is_superuser => is_superuser(SuperQuery, Credentials),
                                           auth_result => success}};
-                {error, Error} -> {stop, Credentials#{auth_result => Error}}
+                {error, Error} ->
+                    ?LOG(error, "[MongoDB] check auth fail: ~p", [Error]),
+                    {stop, Credentials#{auth_result => Error}}
             end
     end.
 
