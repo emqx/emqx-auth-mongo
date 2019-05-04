@@ -20,3 +20,4 @@ eunit.coverdata
 _build/
 rebar.lock
 erlang.mk
+etc/emqx_auth_mongo.conf.rendered
