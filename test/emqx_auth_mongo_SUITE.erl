@@ -44,7 +44,7 @@ all() ->
      {group, auth_mongo_config}].
 
 groups() ->
-    [{emqx_auth_mongo_auth, [sequence], [check_auth, list_auth]},
+    [{emqx_auth_mongo_auth, [sequence], [check_auth]},
      {emqx_auth_mongo_acl, [sequence], [check_acl, acl_super]},
      {auth_mongo_config, [sequence], [server_config]}].
 
@@ -111,16 +111,6 @@ check_auth(_Config) ->
     {ok, #{is_superuser := false}} = emqx_access_control:authenticate(Bcrypt#{password => <<"foo">>}),
     {error, _} = emqx_access_control:authenticate(User1#{password => <<"foo">>}).
 
-list_auth(_Config) ->
-    application:start(emqx_auth_username),
-    emqx_auth_username:add_user(<<"user1">>, <<"password1">>),
-    User1 = #{client_id => <<"client1">>, username => <<"user1">>},
-    {ok, _} = emqx_access_control:authenticate(User1#{password => <<"password1">>}),
-    reload({auth_query, [{password_hash, plain}, {password_field, [<<"password">>]}]}),
-    Plain = #{client_id => <<"client1">>, username => <<"plain">>},
-    {ok, #{is_superuser := true}} = emqx_access_control:authenticate(Plain#{password => <<"plain">>}),
-    application:stop(emqx_auth_username).
-
 check_acl(_Config) ->
     ct:pal("acl cache enabled: ~p~n", [application:get_env(emqx, enable_acl_cache)]),
     {ok, Connection} = ?POOL(?APP),
@@ -145,7 +135,7 @@ check_acl(_Config) ->
     allow = emqx_access_control:check_acl(User4, publish, <<"a/b/c">>).
 
 acl_super(_Config) ->
-    reload({auth_query, [{password_hash, plain}]}),
+    reload({auth_query, [{password_hash, plain}, {password_field, [<<"password">>]}]}),
     {ok, C} = emqx_client:start_link([{host, "localhost"},
                                       {client_id, <<"simpleClient">>},
                                       {username, <<"plain">>},

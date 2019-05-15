@@ -31,12 +31,6 @@
         , query_multi/2
         ]).
 
--define(EMPTY(Username), (Username =:= undefined orelse Username =:= <<>>)).
-
-check(Credentials = #{username := Username, password := Password}, _Config)
-        when ?EMPTY(Username); ?EMPTY(Password) ->
-    {ok, Credentials#{auth_result => bad_username_or_password}};
-
 check(Credentials = #{password := Password}, #{authquery := AuthQuery, superquery := SuperQuery}) ->
     #authquery{collection = Collection, field = Fields,
                hash = HashType, selector = Selector} = AuthQuery,
@@ -52,10 +46,11 @@ check(Credentials = #{password := Password}, #{authquery := AuthQuery, superquer
                      end,
             case Result of
                 ok -> {stop, Credentials#{is_superuser => is_superuser(SuperQuery, Credentials),
+                                          anonymous => false,
                                           auth_result => success}};
                 {error, Error} ->
                     ?LOG(error, "[MongoDB] check auth fail: ~p", [Error]),
-                    {stop, Credentials#{auth_result => Error}}
+                    {stop, Credentials#{auth_result => Error, anonymous => false}}
             end
     end.
 
