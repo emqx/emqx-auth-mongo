@@ -17,6 +17,7 @@
 -include("emqx_auth_mongo.hrl").
 
 -include_lib("emqx/include/emqx.hrl").
+-include_lib("emqx/include/logger.hrl").
 
 -export([ check/2
         , description/0]).
@@ -29,12 +30,6 @@
         , query/2
         , query_multi/2
         ]).
-
--define(EMPTY(Username), (Username =:= undefined orelse Username =:= <<>>)).
-
-check(Credentials = #{username := Username, password := Password}, _Config)
-        when ?EMPTY(Username); ?EMPTY(Password) ->
-    {ok, Credentials#{auth_result => bad_username_or_password}};
 
 check(Credentials = #{password := Password}, #{authquery := AuthQuery, superquery := SuperQuery}) ->
     #authquery{collection = Collection, field = Fields,
@@ -51,8 +46,11 @@ check(Credentials = #{password := Password}, #{authquery := AuthQuery, superquer
                      end,
             case Result of
                 ok -> {stop, Credentials#{is_superuser => is_superuser(SuperQuery, Credentials),
+                                          anonymous => false,
                                           auth_result => success}};
-                {error, Error} -> {stop, Credentials#{auth_result => Error}}
+                {error, Error} ->
+                    ?LOG(error, "[MongoDB] check auth fail: ~p", [Error]),
+                    {stop, Credentials#{auth_result => Error, anonymous => false}}
             end
     end.
 
