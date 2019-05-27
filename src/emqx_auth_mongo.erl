@@ -111,4 +111,3 @@ query_multi(Collection, SelectorList) ->
             Result -> [Result|Acc]
         end
     end, [], SelectorList).
-

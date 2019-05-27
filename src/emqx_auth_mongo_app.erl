@@ -81,4 +81,3 @@ r(auth_query, Config) ->
 r(acl_query, Config) ->
     #aclquery{collection = list_to_binary(get_value(collection, Config, "mqtt_acl")),
               selector   = get_value(selector, Config, [?DEFAULT_SELECTORS])}.
-
