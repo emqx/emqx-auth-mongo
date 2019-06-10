@@ -1,12 +1,20 @@
-language: erlang
+language: bash
 
-otp_release:
-   - 21.3
+sudo: required
 
-before_install:
-    - git clone https://github.com/erlang/rebar3.git; cd rebar3; ./bootstrap; sudo mv rebar3 /usr/local/bin/; cd ..
+services:
+  - docker
+
+install:
+  - docker-compose -f ./docker-compose-travis.yml -p tests up -d 
+
+before_script:
+  - docker exec -i tests_erlang_1 sh -c "sed -i '/auth.mongo.server/c auth.mongo.server = mongo_server:27017' /emqx_auth_mongo/etc/emqx_auth_mongo.conf"
 
 script:
-  - make compile
+  - docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_mongo compile"
+  - docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_mongo eunit"
+  - docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_mongo ct"
 
-sudo: false
+after_script:
+  - docker-compose -f ./docker-compose-travis.yml -p tests down 

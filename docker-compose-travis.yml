@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+  erlang:
+    image: erlang:21.3
+    volumes:
+      - ./:/emqx_auth_mongo
+    networks:
+      - emqx-bridge
+    depends_on:
+      - mongo_server
+    tty: true
+
+  mongo_server:
+    image: mongo:4.1
+    restart: always
+    environment:
+      MONGO_INITDB_DATABASE: mqtt
+    networks:
+      - emqx-bridge
+    command: --bind_ip_all
+
+networks:
+  emqx-bridge:
+    driver: bridge
