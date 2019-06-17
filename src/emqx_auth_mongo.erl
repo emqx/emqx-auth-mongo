@@ -83,9 +83,9 @@ replvar({Field, <<"%u">>}, #{username := Username}) ->
     {Field, Username};
 replvar({Field, <<"%c">>}, #{client_id := ClientId}) ->
     {Field, ClientId};
-replvar({Field, <<"%cn">>}, #{cn := CN}) ->
+replvar({Field, <<"%C">>}, #{cn := CN}) ->
     {Field, CN};
-replvar({Field, <<"%dn">>}, #{dn := DN}) ->
+replvar({Field, <<"%d">>}, #{dn := DN}) ->
     {Field, DN};
 replvar(Selector, _Client) ->
     Selector.
