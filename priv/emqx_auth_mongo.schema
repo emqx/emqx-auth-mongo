@@ -141,6 +141,13 @@
     {pool_size, Pool}]
 end}.
 
+%% The mongodb operation timeout is specified by the value of `cursor_timeout` from application config,
+%% or `infinity` if `cursor_timeout` not specified
+{mapping, "auth.mongo.query_timeout", "mongodb.cursor_timeout", [
+  {default, "5s"},
+  {datatype, {duration, ms}}
+]}.
+
 {mapping, "auth.mongo.auth_query.collection", "emqx_auth_mongo.auth_query", [
   {default, "mqtt_user"},
   {datatype, string}
