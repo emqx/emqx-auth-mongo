@@ -132,7 +132,7 @@ check_acl(_Config) ->
     allow = emqx_access_control:check_acl(User2, subscribe, <<"$SYS/testuser/1">>),
     allow = emqx_access_control:check_acl(User3, publish, <<"a/b/c">>),
     deny = emqx_access_control:check_acl(User3, publish, <<"c">>),
-    deny = emqx_access_control:check_acl(User4, publish, <<"a/b/c">>).
+    allow = emqx_access_control:check_acl(User4, publish, <<"a/b/c">>).
 
 acl_super(_Config) ->
     reload({auth_query, [{password_hash, plain}, {password_field, [<<"password">>]}]}),
