@@ -19,7 +19,7 @@
 -include_lib("emqx/include/emqx.hrl").
 -include_lib("emqx/include/logger.hrl").
 
--export([ check/2
+-export([ check/3
         , description/0]).
 
 -behaviour(ecpool_worker).
@@ -31,7 +31,7 @@
         , query_multi/2
         ]).
 
-check(Credentials = #{password := Password}, #{authquery := AuthQuery, superquery := SuperQuery}) ->
+check(Credentials = #{password := Password}, AuthResult, #{authquery := AuthQuery, superquery := SuperQuery}) ->
     #authquery{collection = Collection, field = Fields,
                hash = HashType, selector = Selector} = AuthQuery,
     case query(Collection, maps:from_list(replvars(Selector, Credentials))) of
@@ -45,12 +45,12 @@ check(Credentials = #{password := Password}, #{authquery := AuthQuery, superquer
                             check_pass({PassHash, Salt, Password}, HashType)
                      end,
             case Result of
-                ok -> {stop, Credentials#{is_superuser => is_superuser(SuperQuery, Credentials),
-                                          anonymous => false,
-                                          auth_result => success}};
+                ok -> {stop, AuthResult#{is_superuser => is_superuser(SuperQuery, Credentials),
+                                         anonymous => false,
+                                         auth_result => success}};
                 {error, Error} ->
                     ?LOG(error, "[MongoDB] check auth fail: ~p", [Error]),
-                    {stop, Credentials#{auth_result => Error, anonymous => false}}
+                    {stop, AuthResult#{auth_result => Error, anonymous => false}}
             end
     end.
 
