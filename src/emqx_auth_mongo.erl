@@ -1,4 +1,5 @@
-%% Copyright (c) 2013-2019 EMQ Technologies Co., Ltd. All Rights Reserved.
+%%--------------------------------------------------------------------
+%% Copyright (c) 2019 EMQ Technologies Co., Ltd. All Rights Reserved.
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -11,18 +12,20 @@
 %% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
+%%--------------------------------------------------------------------
 
 -module(emqx_auth_mongo).
 
--include("emqx_auth_mongo.hrl").
+-behaviour(ecpool_worker).
 
+-include("emqx_auth_mongo.hrl").
 -include_lib("emqx/include/emqx.hrl").
 -include_lib("emqx/include/logger.hrl").
+-include_lib("emqx/include/types.hrl").
 
 -export([ check/3
-        , description/0]).
-
--behaviour(ecpool_worker).
+        , description/0
+        ]).
 
 -export([ replvar/2
         , replvars/2
@@ -31,10 +34,11 @@
         , query_multi/2
         ]).
 
-check(Credentials = #{password := Password}, AuthResult, #{authquery := AuthQuery, superquery := SuperQuery}) ->
+check(Client = #{password := Password}, AuthResult, #{authquery := AuthQuery,
+                                                      superquery := SuperQuery}) ->
     #authquery{collection = Collection, field = Fields,
                hash = HashType, selector = Selector} = AuthQuery,
-    case query(Collection, maps:from_list(replvars(Selector, Credentials))) of
+    case query(Collection, maps:from_list(replvars(Selector, Client))) of
         undefined -> ok;
         UserMap ->
             Result = case [maps:get(Field, UserMap, undefined) || Field <- Fields] of
@@ -45,7 +49,7 @@ check(Credentials = #{password := Password}, AuthResult, #{authquery := AuthQuer
                             check_pass({PassHash, Salt, Password}, HashType)
                      end,
             case Result of
-                ok -> {stop, AuthResult#{is_superuser => is_superuser(SuperQuery, Credentials),
+                ok -> {stop, AuthResult#{is_superuser => is_superuser(SuperQuery, Client),
                                          anonymous => false,
                                          auth_result => success}};
                 {error, Error} ->
@@ -66,18 +70,18 @@ description() -> "Authentication with MongoDB".
 %% Is Superuser?
 %%--------------------------------------------------------------------
 
--spec(is_superuser(undefined | #superquery{}, emqx_types:credentials()) -> boolean()).
+-spec(is_superuser(maybe(#superquery{}), emqx_types:client()) -> boolean()).
 is_superuser(undefined, _Credentials) ->
     false;
-is_superuser(#superquery{collection = Coll, field = Field, selector = Selector}, Credentials) ->
-    Row = query(Coll, maps:from_list(replvars(Selector, Credentials))),
+is_superuser(#superquery{collection = Coll, field = Field, selector = Selector}, Client) ->
+    Row = query(Coll, maps:from_list(replvars(Selector, Client))),
     case maps:get(Field, Row, false) of
         true   -> true;
         _False -> false
     end.
 
-replvars(VarList, Credentials) ->
-    lists:map(fun(Var) -> replvar(Var, Credentials) end, VarList).
+replvars(VarList, Client) ->
+    lists:map(fun(Var) -> replvar(Var, Client) end, VarList).
 
 replvar({Field, <<"%u">>}, #{username := Username}) ->
     {Field, Username};
