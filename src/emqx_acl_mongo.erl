@@ -1,4 +1,5 @@
-%% Copyright (c) 2013-2019 EMQ Technologies Co., Ltd. All Rights Reserved.
+%%--------------------------------------------------------------------
+%% Copyright (c) 2019 EMQ Technologies Co., Ltd. All Rights Reserved.
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -11,6 +12,7 @@
 %% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
+%%--------------------------------------------------------------------
 
 -module(emqx_acl_mongo).
 
@@ -27,16 +29,16 @@
 check_acl(#{username := <<$$, _/binary>>}, _PubSub, _Topic, _AclResult, _State) ->
     ok;
 
-check_acl(Credentials, PubSub, Topic, _AclResult, #{aclquery := AclQuery}) ->
+check_acl(Client, PubSub, Topic, _AclResult, #{aclquery := AclQuery}) ->
     #aclquery{collection = Coll, selector = SelectorList} = AclQuery,
     SelectorMapList =
         lists:map(fun(Selector) ->
-            maps:from_list(emqx_auth_mongo:replvars(Selector, Credentials))
+            maps:from_list(emqx_auth_mongo:replvars(Selector, Client))
         end, SelectorList),
     case emqx_auth_mongo:query_multi(Coll, SelectorMapList) of
         [] -> ok;
         Rows ->
-            try match(Credentials, Topic, topics(PubSub, Rows)) of
+            try match(Client, Topic, topics(PubSub, Rows)) of
                 matched -> {stop, allow};
                 nomatch -> {stop, deny}
             catch
@@ -48,12 +50,12 @@ check_acl(Credentials, PubSub, Topic, _AclResult, #{aclquery := AclQuery}) ->
     end.
 
 
-match(_Credentials, _Topic, []) ->
+match(_Client, _Topic, []) ->
     nomatch;
-match(Credentials, Topic, [TopicFilter|More]) ->
-    case emqx_topic:match(Topic, feedvar(Credentials, TopicFilter)) of
+match(Client, Topic, [TopicFilter|More]) ->
+    case emqx_topic:match(Topic, feedvar(Client, TopicFilter)) of
         true  -> matched;
-        false -> match(Credentials, Topic, More)
+        false -> match(Client, Topic, More)
     end.
 
 topics(publish, Rows) ->
