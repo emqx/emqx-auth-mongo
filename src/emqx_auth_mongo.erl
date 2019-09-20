@@ -34,11 +34,11 @@
         , query_multi/2
         ]).
 
-check(Client = #{password := Password}, AuthResult, #{authquery := AuthQuery,
-                                                      superquery := SuperQuery}) ->
+check(ClientInfo = #{password := Password}, AuthResult,
+      #{authquery := AuthQuery, superquery := SuperQuery}) ->
     #authquery{collection = Collection, field = Fields,
                hash = HashType, selector = Selector} = AuthQuery,
-    case query(Collection, maps:from_list(replvars(Selector, Client))) of
+    case query(Collection, maps:from_list(replvars(Selector, ClientInfo))) of
         undefined -> ok;
         UserMap ->
             Result = case [maps:get(Field, UserMap, undefined) || Field <- Fields] of
@@ -49,7 +49,7 @@ check(Client = #{password := Password}, AuthResult, #{authquery := AuthQuery,
                             check_pass({PassHash, Salt, Password}, HashType)
                      end,
             case Result of
-                ok -> {stop, AuthResult#{is_superuser => is_superuser(SuperQuery, Client),
+                ok -> {stop, AuthResult#{is_superuser => is_superuser(SuperQuery, ClientInfo),
                                          anonymous => false,
                                          auth_result => success}};
                 {error, Error} ->
@@ -73,15 +73,15 @@ description() -> "Authentication with MongoDB".
 -spec(is_superuser(maybe(#superquery{}), emqx_types:client()) -> boolean()).
 is_superuser(undefined, _Credentials) ->
     false;
-is_superuser(#superquery{collection = Coll, field = Field, selector = Selector}, Client) ->
-    Row = query(Coll, maps:from_list(replvars(Selector, Client))),
+is_superuser(#superquery{collection = Coll, field = Field, selector = Selector}, ClientInfo) ->
+    Row = query(Coll, maps:from_list(replvars(Selector, ClientInfo))),
     case maps:get(Field, Row, false) of
         true   -> true;
         _False -> false
     end.
 
-replvars(VarList, Client) ->
-    lists:map(fun(Var) -> replvar(Var, Client) end, VarList).
+replvars(VarList, ClientInfo) ->
+    lists:map(fun(Var) -> replvar(Var, ClientInfo) end, VarList).
 
 replvar({Field, <<"%u">>}, #{username := Username}) ->
     {Field, Username};
@@ -91,7 +91,7 @@ replvar({Field, <<"%C">>}, #{cn := CN}) ->
     {Field, CN};
 replvar({Field, <<"%d">>}, #{dn := DN}) ->
     {Field, DN};
-replvar(Selector, _Client) ->
+replvar(Selector, _ClientInfo) ->
     Selector.
 
 %%--------------------------------------------------------------------
