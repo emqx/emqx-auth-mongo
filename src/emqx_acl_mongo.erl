@@ -29,16 +29,16 @@
 check_acl(#{username := <<$$, _/binary>>}, _PubSub, _Topic, _AclResult, _State) ->
     ok;
 
-check_acl(Client, PubSub, Topic, _AclResult, #{aclquery := AclQuery}) ->
+check_acl(ClientInfo, PubSub, Topic, _AclResult, #{aclquery := AclQuery}) ->
     #aclquery{collection = Coll, selector = SelectorList} = AclQuery,
     SelectorMapList =
         lists:map(fun(Selector) ->
-            maps:from_list(emqx_auth_mongo:replvars(Selector, Client))
+            maps:from_list(emqx_auth_mongo:replvars(Selector, ClientInfo))
         end, SelectorList),
     case emqx_auth_mongo:query_multi(Coll, SelectorMapList) of
         [] -> ok;
         Rows ->
-            try match(Client, Topic, topics(PubSub, Rows)) of
+            try match(ClientInfo, Topic, topics(PubSub, Rows)) of
                 matched -> {stop, allow};
                 nomatch -> {stop, deny}
             catch
@@ -50,12 +50,12 @@ check_acl(Client, PubSub, Topic, _AclResult, #{aclquery := AclQuery}) ->
     end.
 
 
-match(_Client, _Topic, []) ->
+match(_ClientInfo, _Topic, []) ->
     nomatch;
-match(Client, Topic, [TopicFilter|More]) ->
-    case emqx_topic:match(Topic, feedvar(Client, TopicFilter)) of
+match(ClientInfo, Topic, [TopicFilter|More]) ->
+    case emqx_topic:match(Topic, feedvar(ClientInfo, TopicFilter)) of
         true  -> matched;
-        false -> match(Client, Topic, More)
+        false -> match(ClientInfo, Topic, More)
     end.
 
 topics(publish, Rows) ->
