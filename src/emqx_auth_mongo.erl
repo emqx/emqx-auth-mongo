@@ -70,8 +70,8 @@ description() -> "Authentication with MongoDB".
 %% Is Superuser?
 %%--------------------------------------------------------------------
 
--spec(is_superuser(maybe(#superquery{}), emqx_types:client()) -> boolean()).
-is_superuser(undefined, _Credentials) ->
+-spec(is_superuser(maybe(#superquery{}), emqx_types:clientinfo()) -> boolean()).
+is_superuser(undefined, _ClientInfo) ->
     false;
 is_superuser(#superquery{collection = Coll, field = Field, selector = Selector}, ClientInfo) ->
     Row = query(Coll, maps:from_list(replvars(Selector, ClientInfo))),
@@ -85,7 +85,7 @@ replvars(VarList, ClientInfo) ->
 
 replvar({Field, <<"%u">>}, #{username := Username}) ->
     {Field, Username};
-replvar({Field, <<"%c">>}, #{client_id := ClientId}) ->
+replvar({Field, <<"%c">>}, #{clientid := ClientId}) ->
     {Field, ClientId};
 replvar({Field, <<"%C">>}, #{cn := CN}) ->
     {Field, CN};
