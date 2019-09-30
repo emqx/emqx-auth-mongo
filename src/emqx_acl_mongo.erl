@@ -70,7 +70,7 @@ topics(subscribe, Rows) ->
         lists:umerge(Acc, Topics)
     end, [], Rows).
 
-feedvar(#{client_id := ClientId, username := Username}, Str) ->
+feedvar(#{clientid := ClientId, username := Username}, Str) ->
     lists:foldl(fun({Var, Val}, Acc) ->
                     feedvar(Acc, Var, Val)
                 end, Str, [{"%u", Username}, {"%c", ClientId}]).
