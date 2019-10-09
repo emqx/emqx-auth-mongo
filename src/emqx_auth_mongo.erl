@@ -79,16 +79,23 @@ is_superuser(#superquery{collection = Coll, field = Field, selector = Selector},
 replvars(VarList, Credentials) ->
     lists:map(fun(Var) -> replvar(Var, Credentials) end, VarList).
 
-replvar({Field, <<"%u">>}, #{username := Username}) ->
-    {Field, Username};
-replvar({Field, <<"%c">>}, #{client_id := ClientId}) ->
-    {Field, ClientId};
-replvar({Field, <<"%C">>}, #{cn := CN}) ->
-    {Field, CN};
-replvar({Field, <<"%d">>}, #{dn := DN}) ->
-    {Field, DN};
+replvar({Field, <<"%u">>}, Credentials) ->
+    {Field, safe_get(username, Credentials)};
+replvar({Field, <<"%c">>}, Credentials) ->
+    {Field, safe_get(client_id, Credentials)};
+replvar({Field, <<"%C">>}, Credentials) ->
+    {Field, safe_get(cn, Credentials)};
+replvar({Field, <<"%d">>}, Credentials) ->
+    {Field, safe_get(dn, Credentials)};
 replvar(Selector, _Client) ->
     Selector.
+
+safe_get(K, Credentials) ->
+    bin(maps:get(K, Credentials, undefined)).
+
+bin(A) when is_atom(A) -> atom_to_binary(A, utf8);
+bin(B) when is_binary(B) -> B;
+bin(X) -> X.
 
 %%--------------------------------------------------------------------
 %% MongoDB Connect/Query
