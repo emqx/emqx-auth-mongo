@@ -196,23 +196,6 @@ server_config(_) ->
            {selector,"username=%c"}],
 
     Acl_query = [{collection,"mqtt_acltest"},{selector,"username=%c"}],
-    SetConfigKeys = ["server=localhost:6377",
-                     "type=unknown",
-                     "pool=1",
-                     "login=admin",
-                     "password=public",
-                     "database=mqtt",
-                     "auth_query.collection=mqtt_usertest",
-                     "auth_query.password_field=password1",
-                     "auth_query.password_hash=sha256,salt",
-                     "auth_query.selector=username=%c",
-                     "super_query.collection=mqtt_usertest",
-                     "super_query.super_field=is_superuser11",
-                     "super_query.selector=username=%c",
-                     "acl_query.collection=mqtt_acltest",
-                     "acl_query.selector=username=%c"],
-
-    lists:foreach(fun set_cmd/1, SetConfigKeys),
     {ok, S} =  application:get_env(emqx_auth_mongo, server),
     {ok, A} =  application:get_env(emqx_auth_mongo, auth_query),
     {ok, Super} =  application:get_env(emqx_auth_mongo, super_query),
@@ -222,8 +205,6 @@ server_config(_) ->
     ?assertEqual(lists:sort(Super_query), lists:sort(Super)),
     ?assertEqual(lists:sort(Acl_query), lists:sort(Acl)).
 
-set_cmd(Key) ->
-    clique:run(["config", "set", string:join(["auth.mongo", Key], "."), "--app=emqx_auth_mongo"]).
 
 ct_log(Connection, Collection, User1) ->
     Selector = {list_to_binary("username"), list_to_binary("%u")},
