@@ -38,7 +38,6 @@ start(_StartType, _StartArgs) ->
     {ok, Sup} = emqx_auth_mongo_sup:start_link(),
     with_env(auth_query, fun reg_authmod/1),
     with_env(acl_query,  fun reg_aclmod/1),
-    emqx_auth_mongo_cfg:register(),
     {ok, Sup}.
 
 prep_stop(State) ->
@@ -52,8 +51,7 @@ stop(_State) ->
 reg_authmod(AuthQuery) ->
     SuperQuery = r(super_query, application:get_env(?APP, super_query, undefined)),
     ok = emqx:hook('client.authenticate', fun emqx_auth_mongo:check/3,
-                   [#{authquery => AuthQuery, superquery => SuperQuery}]),
-    emqx_auth_mongo_cfg:unregister().
+                   [#{authquery => AuthQuery, superquery => SuperQuery}]).
 
 reg_aclmod(AclQuery) ->
     ok = emqx:hook('client.check_acl', fun emqx_acl_mongo:check_acl/5, [#{aclquery => AclQuery}]).
