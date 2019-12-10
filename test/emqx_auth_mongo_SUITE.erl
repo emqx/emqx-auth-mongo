@@ -47,8 +47,7 @@ all() ->
 
 groups() ->
     [{emqx_auth_mongo_auth, [sequence], [check_auth]},
-     {emqx_auth_mongo_acl, [sequence], [check_acl, acl_super]},
-     {auth_mongo_config, [sequence], [server_config]}].
+     {emqx_auth_mongo_acl, [sequence], [check_acl, acl_super]}].
 
 init_per_suite(Config) ->
     emqx_ct_helpers:start_apps([emqx, emqx_auth_mongo], fun set_special_configs/1),
@@ -174,37 +173,6 @@ comment_config(_) ->
     application:start(?APP),
     ?assertEqual([], emqx_access_control:lookup_mods(auth)),
     ?assertEqual([], emqx_access_control:lookup_mods(acl)).
-
-server_config(_) ->
-    Server =
-          [{type,unknown},
-           {hosts,["localhost:6377"]},
-           {options,[{pool_size,1},{max_overflow,0}]},
-           {worker_options,
-               [{database,<<"mqtt">>},
-                {auth_source,<<"mqtt">>}]},
-           {auto_reconnect,1},
-           {pool_size,1}],
-    Auth_query =
-          [{collection,"mqtt_usertest"},
-           {password_field,[<<"password1">>]},
-           {password_hash,{sha256,salt}},
-           {selector,"username=%c"}],
-    Super_query =
-          [{collection,"mqtt_usertest"},
-           {super_field,"is_superuser11"},
-           {selector,"username=%c"}],
-
-    Acl_query = [{collection,"mqtt_acltest"},{selector,"username=%c"}],
-    {ok, S} =  application:get_env(emqx_auth_mongo, server),
-    {ok, A} =  application:get_env(emqx_auth_mongo, auth_query),
-    {ok, Super} =  application:get_env(emqx_auth_mongo, super_query),
-    {ok, Acl} =  application:get_env(emqx_auth_mongo, acl_query),
-    ?assertEqual(lists:sort(Server), lists:sort(S)),
-    ?assertEqual(lists:sort(Auth_query), lists:sort(A)),
-    ?assertEqual(lists:sort(Super_query), lists:sort(Super)),
-    ?assertEqual(lists:sort(Acl_query), lists:sort(Acl)).
-
 
 ct_log(Connection, Collection, User1) ->
     Selector = {list_to_binary("username"), list_to_binary("%u")},
