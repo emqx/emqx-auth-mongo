@@ -42,8 +42,7 @@
 
 all() ->
     [{group, emqx_auth_mongo_auth},
-     {group, emqx_auth_mongo_acl},
-     {group, auth_mongo_config}].
+     {group, emqx_auth_mongo_acl}].
 
 groups() ->
     [{emqx_auth_mongo_auth, [sequence], [check_auth]},
