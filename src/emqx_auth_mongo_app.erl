@@ -36,6 +36,7 @@
 
 start(_StartType, _StartArgs) ->
     {ok, Sup} = emqx_auth_mongo_sup:start_link(),
+    emqx_auth_mongo:register_metrics(),
     with_env(auth_query, fun reg_authmod/1),
     with_env(acl_query,  fun reg_aclmod/1),
     {ok, Sup}.
