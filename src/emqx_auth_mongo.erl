@@ -23,7 +23,8 @@
 -include_lib("emqx/include/logger.hrl").
 -include_lib("emqx/include/types.hrl").
 
--export([ check/3
+-export([ register_metrics/0
+        , check/3
         , description/0
         ]).
 
@@ -34,12 +35,16 @@
         , query_multi/2
         ]).
 
+-spec(register_metrics() -> ok).
+register_metrics() ->
+    lists:foreach(fun emqx_metrics:new/1, ?AUTH_METRICS).
+
 check(ClientInfo = #{password := Password}, AuthResult,
       #{authquery := AuthQuery, superquery := SuperQuery}) ->
     #authquery{collection = Collection, field = Fields,
                hash = HashType, selector = Selector} = AuthQuery,
     case query(Collection, maps:from_list(replvars(Selector, ClientInfo))) of
-        undefined -> ok;
+        undefined -> emqx_metrics:inc(?AUTH_METRICS(ignore));
         UserMap ->
             Result = case [maps:get(Field, UserMap, undefined) || Field <- Fields] of
                         [undefined] -> {error, password_error};
@@ -49,11 +54,14 @@ check(ClientInfo = #{password := Password}, AuthResult,
                             check_pass({PassHash, Salt, Password}, HashType)
                      end,
             case Result of
-                ok -> {stop, AuthResult#{is_superuser => is_superuser(SuperQuery, ClientInfo),
-                                         anonymous => false,
-                                         auth_result => success}};
+                ok ->
+                    ok = emqx_metrics:inc(?AUTH_METRICS(success)),
+                    {stop, AuthResult#{is_superuser => is_superuser(SuperQuery, ClientInfo),
+                                       anonymous => false,
+                                       auth_result => success}};
                 {error, Error} ->
                     ?LOG(error, "[MongoDB] check auth fail: ~p", [Error]),
+                    ok = emqx_metrics:inc(?AUTH_METRICS(failure)),
                     {stop, AuthResult#{auth_result => Error, anonymous => false}}
             end
     end.
