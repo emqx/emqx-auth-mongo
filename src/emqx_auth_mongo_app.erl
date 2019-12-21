@@ -49,11 +49,13 @@ stop(_State) ->
     ok.
 
 reg_authmod(AuthQuery) ->
+    emqx_auth_mongo:register_metrics(),
     SuperQuery = r(super_query, application:get_env(?APP, super_query, undefined)),
     ok = emqx:hook('client.authenticate', fun emqx_auth_mongo:check/3,
                    [#{authquery => AuthQuery, superquery => SuperQuery}]).
 
 reg_aclmod(AclQuery) ->
+    emqx_acl_mongo:register_metrics(),
     ok = emqx:hook('client.check_acl', fun emqx_acl_mongo:check_acl/5, [#{aclquery => AclQuery}]).
 
 %%--------------------------------------------------------------------
