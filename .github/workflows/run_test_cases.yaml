@@ -1,0 +1,34 @@
+name: Run test cases
+
+on: [push, pull_request]
+
+jobs:    
+    run_test_cases:
+        runs-on: ubuntu-latest
+      
+        steps:
+            - name: install docker-compose
+              run: | 
+                sudo curl -L "https://github.com/docker/compose/releases/download/1.25.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+                sudo chmod +x /usr/local/bin/docker-compose
+            - uses: actions/checkout@v1
+            - name: prepare
+              run: |
+                docker-compose -f ./docker-compose-travis.yml -p tests up -d 
+            - name: run test cases
+              run: |
+                docker exec -i tests_erlang_1 sh -c "sed -i '/auth.ldap.servers/c auth.ldap.servers = ldap_server' ./emqx_auth_ldap/etc/emqx_auth_ldap.conf"
+                docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_ldap xref"
+                docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_ldap eunit"
+                docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_ldap ct"
+                docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_ldap cover"
+            - uses: actions/upload-artifact@v1
+              if: always()
+              with:
+                name: logs
+                path: _build/test/logs
+            - uses: actions/upload-artifact@v1
+              with:
+                name: cover
+                path: _build/test/cover
+
