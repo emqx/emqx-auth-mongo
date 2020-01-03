@@ -18,10 +18,10 @@ jobs:
             - name: run test cases
               run: |
                 docker exec -i $(docker ps -a -f name=tests_erlang_1 -q) sh -c "sed -i '/auth.mongo.server/c auth.mongo.server = mongo_server:27017' /emqx_auth_mongo/etc/emqx_auth_mongo.conf"
-                docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_ldap xref"
-                docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_ldap eunit"
-                docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_ldap ct"
-                docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_ldap cover"
+                docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_mongo xref"
+                docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_mongo eunit"
+                docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_mongo ct"
+                docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_mongo cover"
             - uses: actions/upload-artifact@v1
               if: always()
               with:
