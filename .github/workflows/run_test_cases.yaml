@@ -14,7 +14,11 @@ jobs:
             - uses: actions/checkout@v1
             - name: run test cases
               run: |
+<<<<<<< HEAD
                 docker-compose -f ./docker-compose.yml -p tests up -d
+=======
+                docker-compose -f ./docker-compose-travis.yml -p tests up -d
+>>>>>>> master
                 docker exec -i $(docker ps -a -f name=tests_erlang_1 -q) sh -c "sed -i '/auth.mongo.server/c auth.mongo.server = mongo_server:27017' /emqx_auth_mongo/etc/emqx_auth_mongo.conf"
                 docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_mongo xref"
                 docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_mongo eunit"
