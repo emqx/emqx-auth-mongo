@@ -16,6 +16,8 @@ services:
     restart: always
     environment:
       MONGO_INITDB_DATABASE: mqtt
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: public
     networks:
       - emqx-bridge
     command: --bind_ip_all

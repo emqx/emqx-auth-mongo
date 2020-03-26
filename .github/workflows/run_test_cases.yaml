@@ -16,6 +16,9 @@ jobs:
               run: |
                 docker-compose -f ./docker-compose.yml -p tests up -d
                 docker exec -i $(docker ps -a -f name=tests_erlang_1 -q) sh -c "sed -i '/auth.mongo.server/c auth.mongo.server = mongo_server:27017' /emqx_auth_mongo/etc/emqx_auth_mongo.conf"
+                docker exec -i $(docker ps -a -f name=tests_erlang_1 -q) sh -c "sed -i '/auth.mongo.login/c auth.mongo.login = root' /emqx_auth_mongo/etc/emqx_auth_mongo.conf"
+                docker exec -i $(docker ps -a -f name=tests_erlang_1 -q) sh -c "sed -i '/auth.mongo.password/c auth.mongo.password = public' /emqx_auth_mongo/etc/emqx_auth_mongo.conf"
+                docker exec -i $(docker ps -a -f name=tests_erlang_1 -q) sh -c "sed -i '/auth.mongo.database/c auth.mongo.database = mqtt' /emqx_auth_mongo/etc/emqx_auth_mongo.conf"
                 docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_mongo xref"
                 docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_mongo eunit"
                 docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_mongo ct"
