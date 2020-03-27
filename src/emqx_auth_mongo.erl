@@ -45,6 +45,14 @@ check(ClientInfo = #{password := Password}, AuthResult,
                hash = HashType, selector = Selector} = AuthQuery,
     case query(Collection, maps:from_list(replvars(Selector, ClientInfo))) of
         undefined -> emqx_metrics:inc(?AUTH_METRICS(ignore));
+        {error, timeout} ->
+            ?LOG(error, "[MongoDB] Can't connect to MongoDB server: timeout"),
+            ok = emqx_metrics:inc(?AUTH_METRICS(failure)),
+            {stop, AuthResult#{auth_result => not_authorized, anonymous => false}};
+        {error, Reason} ->
+            ?LOG(error, "[MongoDB] Can't connect to MongoDB server: ~0p", [Reason]),
+            ok = emqx_metrics:inc(?AUTH_METRICS(failure)),
+            {stop, AuthResult#{auth_result => not_authorized, anonymous => false}};
         UserMap ->
             Result = case [maps:get(Field, UserMap, undefined) || Field <- Fields] of
                         [undefined] -> {error, password_error};
