@@ -112,6 +112,7 @@ check_auth(_Config) ->
     {error, _} = emqx_access_control:authenticate(User1#{password => <<"foo">>}).
 
 check_acl(_Config) ->
+    emqx_modules:load_module(emqx_mod_acl_internal, false),
     ct:pal("acl cache enabled: ~p~n", [application:get_env(emqx, enable_acl_cache)]),
     {ok, Connection} = ?POOL(?APP),
     {ok, AppConfig} = application:get_env(?APP, acl_query),
