@@ -27,7 +27,7 @@
         ]).
 -spec(register_metrics() -> ok).
 register_metrics() ->
-    lists:foreach(fun emqx_metrics:new/1, ?ACL_METRICS).
+    lists:foreach(fun emqx_metrics:ensure/1, ?ACL_METRICS).
 
 check_acl(#{username := <<$$, _/binary>>}, _PubSub, _Topic, _AclResult, _State) ->
     ok;
