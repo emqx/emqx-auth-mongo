@@ -9,9 +9,8 @@ jobs:
         strategy:
             matrix:
                 mongo_image:
-                    mongo_image:
-                        - mongo:3
-                        - mongo:4
+                    - mongo:3
+                    - mongo:4
       
         steps:
             - name: install docker-compose
