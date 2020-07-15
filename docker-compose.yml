@@ -12,7 +12,7 @@ services:
     tty: true
 
   mongo_server:
-    image: mongo:4.1
+    image: ${MONGO_IMAGE}
     restart: always
     environment:
       MONGO_INITDB_DATABASE: mqtt
