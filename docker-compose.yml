@@ -12,13 +12,15 @@ services:
     tty: true
 
   mongo_server:
-    image: ${MONGO_IMAGE}
+    image: mongo:${MONGO_TAG}
     restart: always
     environment:
       MONGO_INITDB_DATABASE: mqtt
     networks:
       - emqx-bridge
-    command: --bind_ip_all
+    command: 
+      --ipv6
+      --bind_ip_all
 
 networks:
   emqx-bridge:
