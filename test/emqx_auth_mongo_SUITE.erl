@@ -17,6 +17,7 @@
 -module(emqx_auth_mongo_SUITE).
 
 -compile(export_all).
+-compile(nowarn_export_all).
 
 -import(proplists, [get_value/3]).
 
