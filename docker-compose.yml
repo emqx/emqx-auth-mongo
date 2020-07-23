@@ -6,20 +6,22 @@ services:
     volumes:
       - ./:/emqx_auth_mongo
     networks:
-      - emqx-bridge
+      - emqx_bridge
     depends_on:
       - mongo_server
     tty: true
 
   mongo_server:
-    image: ${MONGO_IMAGE}
+    image: mongo:${MONGO_TAG}
     restart: always
     environment:
       MONGO_INITDB_DATABASE: mqtt
     networks:
-      - emqx-bridge
-    command: --bind_ip_all
+      - emqx_bridge
+    command: 
+      --ipv6
+      --bind_ip_all
 
 networks:
-  emqx-bridge:
+  emqx_bridge:
     driver: bridge
