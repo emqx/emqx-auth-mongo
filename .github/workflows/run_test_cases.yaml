@@ -33,7 +33,7 @@ jobs:
                     docker exec -i $(docker ps -a -f name=tests_erlang_1 -q) sh -c "sed -i '/auth.mongo.server/c auth.mongo.server = mongo_server:27017' /emqx_auth_mongo/etc/emqx_auth_mongo.conf"
                 else
                     ipv6_address=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.GlobalIPv6Address}}{{end}}' $(docker ps -a -f name=tests_mongo_server_1 -q))
-                    docker exec -i $(docker ps -a -f name=tests_erlang_1 -q) sh -c "sed -i '/auth.mongo.server/c auth.mongo.server = $ipv6_address:6379' /emqx_auth_mongo/etc/emqx_auth_mongo.conf"
+                    docker exec -i $(docker ps -a -f name=tests_erlang_1 -q) sh -c "sed -i '/auth.mongo.server/c auth.mongo.server = $ipv6_address:27017' /emqx_auth_mongo/etc/emqx_auth_mongo.conf"
                 fi
                 docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_mongo xref"
                 docker exec -i tests_erlang_1 sh -c "make -C /emqx_auth_mongo eunit"
