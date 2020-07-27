@@ -19,8 +19,6 @@
 -compile(export_all).
 -compile(nowarn_export_all).
 
--import(proplists, [get_value/3]).
-
 -include_lib("emqx/include/emqx.hrl").
 -include_lib("common_test/include/ct.hrl").
 -include_lib("eunit/include/eunit.hrl").
@@ -28,6 +26,9 @@
 -define(APP, emqx_auth_mongo).
 
 -define(POOL(App),  ecpool_worker:client(gproc_pool:pick_worker({ecpool, App}))).
+
+-define(MONGO_CL_ACL, <<"mqtt_acl">>).
+-define(MONGO_CL_USER, <<"mqtt_user">>).
 
 -define(INIT_ACL, [{<<"username">>, <<"testuser">>, <<"clientid">>, <<"null">>, <<"subscribe">>, [<<"#">>]},
                    {<<"username">>, <<"dashboard">>, <<"clientid">>, <<"null">>, <<"pubsub">>, [<<"$SYS/#">>]},
@@ -41,29 +42,24 @@
                     {<<"username">>, <<"bcrypt_foo">>, <<"password">>, <<"$2a$12$sSS8Eg.ovVzaHzi1nUHYK.HbUIOdlQI0iS22Q5rd5z.JVVYH6sfm6">>, <<"salt">>, <<"$2a$12$sSS8Eg.ovVzaHzi1nUHYK.">>, <<"is_superuser">>, false}
                     ]).
 
+%%--------------------------------------------------------------------
+%% Setups
+%%--------------------------------------------------------------------
+
 all() ->
-    [{group, emqx_auth_mongo_auth},
-     {group, emqx_auth_mongo_acl}].
+    emqx_ct:all(?MODULE).
 
-groups() ->
-    [{emqx_auth_mongo_auth, [sequence], [check_auth]},
-     {emqx_auth_mongo_acl, [sequence], [check_acl, acl_super]}].
+init_per_suite(Cfg) ->
+    emqx_ct_helpers:start_apps([emqx_auth_mongo], fun set_special_confs/1),
+    emqx_modules:load_module(emqx_mod_acl_internal, false),
+    init_mongo_rows(),
+    Cfg.
 
-init_per_suite(Config) ->
-    emqx_ct_helpers:start_apps([emqx, emqx_auth_mongo], fun set_special_configs/1),
-    {ok, Connection} = ecpool_worker:client(gproc_pool:pick_worker({ecpool, emqx_auth_mongo})),
-    [{connection, Connection} | Config].
+end_per_suite(_Cfg) ->
+    deinit_mongo_data(),
+    emqx_ct_helpers:stop_apps([emqx_auth_mongo]).
 
-end_per_suite(Config) ->
-    {ok, Connection} = ?POOL(?APP),
-    AuthCollection = collection(authquery, Config),
-    AclCollection = collection(aclquery, Config),
-    mongo_api:delete(Connection, AuthCollection, {}),
-    mongo_api:delete(Connection, AclCollection, {}),
-    application:stop(emqx_auth_mongo),
-    application:stop(emqx).
-
-set_special_configs(emqx) ->
+set_special_confs(emqx) ->
     application:set_env(emqx, acl_nomatch, deny),
     application:set_env(emqx, acl_file,
                         emqx_ct_helpers:deps_path(emqx, "test/emqx_SUITE_data/acl.conf")),
@@ -71,17 +67,28 @@ set_special_configs(emqx) ->
     application:set_env(emqx, enable_acl_cache, false),
     application:set_env(emqx, plugins_loaded_file,
                         emqx_ct_helpers:deps_path(emqx, "test/emqx_SUITE_data/loaded_plugins"));
-set_special_configs(_App) ->
+set_special_confs(_App) ->
     ok.
 
-check_auth(_Config) ->
+init_mongo_rows() ->
+    %% Users
     {ok, Connection} = ?POOL(?APP),
-    {ok, AppConfig} = application:get_env(emqx_auth_mongo, auth_query),
-    Collection = collection(authquery, AppConfig),
-    mongo_api:delete(Connection, Collection, {}),
-    InitR = mongo_api:insert(Connection, Collection, ?INIT_AUTH),
-    ct:pal("init auth result: ~p~n", [InitR]),
+    mongo_api:delete(Connection, ?MONGO_CL_USER, {}),
+    ?assertMatch({{true, _}, _}, mongo_api:insert(Connection, ?MONGO_CL_USER, ?INIT_AUTH)),
+    %% ACLs
+    mongo_api:delete(Connection, ?MONGO_CL_ACL, {}),
+    ?assertMatch({{true, _}, _}, mongo_api:insert(Connection, ?MONGO_CL_ACL, ?INIT_ACL)).
 
+deinit_mongo_data() ->
+    {ok, Connection} = ?POOL(?APP),
+    mongo_api:delete(Connection, ?MONGO_CL_USER, {}),
+    mongo_api:delete(Connection, ?MONGO_CL_ACL, {}).
+
+%%--------------------------------------------------------------------
+%% Test cases
+%%--------------------------------------------------------------------
+
+t_check_auth(_) ->
     Plain = #{zone => external, clientid => <<"client1">>, username => <<"plain">>},
     Plain1 = #{zone => external, clientid => <<"client1">>, username => <<"plain2">>},
     Md5 = #{zone => external, clientid => <<"md5">>, username => <<"md5">>},
@@ -112,22 +119,14 @@ check_auth(_Config) ->
     {ok, #{is_superuser := false}} = emqx_access_control:authenticate(Bcrypt#{password => <<"foo">>}),
     {error, _} = emqx_access_control:authenticate(User1#{password => <<"foo">>}).
 
-check_acl(_Config) ->
-    emqx_modules:load_module(emqx_mod_acl_internal, false),
-    ct:pal("acl cache enabled: ~p~n", [application:get_env(emqx, enable_acl_cache)]),
+t_check_acl(_) ->
     {ok, Connection} = ?POOL(?APP),
-    {ok, AppConfig} = application:get_env(?APP, acl_query),
-    Collection = collection(aclquery, AppConfig),
-    mongo_api:delete(Connection, Collection, {}),
-    InitR = mongo_api:insert(Connection, Collection, ?INIT_ACL),
-    ct:pal("init acl result: ~p~n", [InitR]),
     User1 = #{zone => external, clientid => <<"client1">>, username => <<"testuser">>},
     User2 = #{zone => external, clientid => <<"client2">>, username => <<"dashboard">>},
     User3 = #{zone => external, clientid => <<"client2">>, username => <<"user3">>},
     User4 = #{zone => external, clientid => <<"$$client2">>, username => <<"$$user3">>},
-    3 = mongo_api:count(Connection, Collection, {}, 17),
+    3 = mongo_api:count(Connection, ?MONGO_CL_ACL, {}, 17),
     %% ct log output
-    %%ct_log(Connection, Collection, User1),
     allow = emqx_access_control:check_acl(User1, subscribe, <<"users/testuser/1">>),
     deny = emqx_access_control:check_acl(User1, subscribe, <<"$SYS/testuser/1">>),
     deny = emqx_access_control:check_acl(User2, subscribe, <<"a/b/c">>),
@@ -136,10 +135,9 @@ check_acl(_Config) ->
     deny = emqx_access_control:check_acl(User3, publish, <<"c">>),
     allow = emqx_access_control:check_acl(User4, publish, <<"a/b/c">>).
 
-acl_super(_Config) ->
+t_acl_super(_) ->
     reload({auth_query, [{password_hash, plain}, {password_field, [<<"password">>]}]}),
-    {ok, C} = emqtt:start_link([{host, "localhost"},
-                                {clientid, <<"simpleClient">>},
+    {ok, C} = emqtt:start_link([{clientid, <<"simpleClient">>},
                                 {username, <<"plain">>},
                                 {password, <<"plain">>}]),
     {ok, _} = emqtt:connect(C),
@@ -158,37 +156,9 @@ acl_super(_Config) ->
     end,
     emqtt:disconnect(C).
 
-collection(Query, Config) ->
-    iolist_to_binary(case Query of
-                         superquery ->
-                             get_value(collection, Config, "mqtt_user");
-                         authquery ->
-                             get_value(collection, Config, "mqtt_user");
-                         aclquery ->
-                             get_value(collection, Config, "mqtt_acl")
-                     end).
-
-comment_config(_) ->
-    application:stop(?APP),
-    [application:unset_env(?APP, Par) || Par <- [acl_query, auth_query]],
-    application:start(?APP),
-    ?assertEqual([], emqx_access_control:lookup_mods(auth)),
-    ?assertEqual([], emqx_access_control:lookup_mods(acl)).
-
-ct_log(Connection, Collection, User1) ->
-    Selector = {list_to_binary("username"), list_to_binary("%u")},
-    find(Connection, Collection, emqx_auth_mongo:replvar(Selector, User1)).
-   % ct:log("Got:~p", [Res]).
-
-%% @private
-find(Connection, Collection, Selector) ->
-    find(Connection, Collection, Selector, #{}).
-
-find(Connection, Collection, Selector, Projector) ->
-    Cursor = mongo_api:find(Connection, Collection, Selector, #{projector => Projector}),
-    Result = mc_cursor:rest(Cursor),
-    mc_cursor:close(Cursor),
-    Result.
+%%--------------------------------------------------------------------
+%% Utils
+%%--------------------------------------------------------------------
 
 reload({Par, Vals}) when is_list(Vals) ->
     application:stop(?APP),
@@ -202,4 +172,3 @@ reload({Par, Vals}) when is_list(Vals) ->
     end, TupleVals),
     application:set_env(?APP, Par, lists:append(NewVals, Vals)),
     application:start(?APP).
-

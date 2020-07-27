@@ -16,11 +16,15 @@ services:
     restart: always
     environment:
       MONGO_INITDB_DATABASE: mqtt
+      #volumes:
+      #    - ./test/emqx_auth_mongo_SUITE_data/mongodb.pem/:/etc/certs/mongodb.pem
     networks:
       - emqx_bridge
-    command: 
+    command:
       --ipv6
       --bind_ip_all
+      #--sslMode requireSSL
+      #--sslPEMKeyFile /etc/certs/mongodb.pem
 
 networks:
   emqx_bridge:
