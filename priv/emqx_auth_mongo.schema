@@ -134,11 +134,11 @@
     false -> Type0
   end,
   [{type, Type},
-    {hosts, Hosts},
-    {options, Options},
-    {worker_options, WorkerOptions},
-    {auto_reconnect, 1},
-    {pool_size, Pool}]
+   {hosts, Hosts},
+   {options, Options},
+   {worker_options, WorkerOptions},
+   {auto_reconnect, 1},
+   {pool_size, Pool}]
 end}.
 
 %% The mongodb operation timeout is specified by the value of `cursor_timeout` from application config,
