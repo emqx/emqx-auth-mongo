@@ -52,7 +52,7 @@ all() ->
 init_per_suite(Cfg) ->
     emqx_ct_helpers:start_apps([emqx_auth_mongo], fun set_special_confs/1),
     emqx_modules:load_module(emqx_mod_acl_internal, false),
-    init_mongo_rows(),
+    init_mongo_data(),
     Cfg.
 
 end_per_suite(_Cfg) ->
@@ -70,7 +70,7 @@ set_special_confs(emqx) ->
 set_special_confs(_App) ->
     ok.
 
-init_mongo_rows() ->
+init_mongo_data() ->
     %% Users
     {ok, Connection} = ?POOL(?APP),
     mongo_api:delete(Connection, ?MONGO_CL_USER, {}),
