@@ -32,13 +32,13 @@ register_metrics() ->
 check_acl(#{username := <<$$, _/binary>>}, _PubSub, _Topic, _AclResult, _State) ->
     ok;
 
-check_acl(ClientInfo, PubSub, Topic, _AclResult, #{aclquery := AclQuery}) ->
+check_acl(ClientInfo, PubSub, Topic, _AclResult, #{aclquery := AclQuery , pool := Pool}) ->
     #aclquery{collection = Coll, selector = SelectorList} = AclQuery,
     SelectorMapList =
         lists:map(fun(Selector) ->
             maps:from_list(emqx_auth_mongo:replvars(Selector, ClientInfo))
         end, SelectorList),
-    case emqx_auth_mongo:query_multi(Coll, SelectorMapList) of
+    case emqx_auth_mongo:query_multi(Pool, Coll, SelectorMapList) of
         [] -> ok;
         Rows ->
             try match(ClientInfo, Topic, topics(PubSub, Rows)) of
