@@ -178,7 +178,7 @@ end}.
 ]}.
 
 {translation, "emqx_auth_mongo.auth_query", fun(Conf) ->
-  cas cuttlefish:conf_get("auth.mongo.auth_query.collection", Conf) of
+  case cuttlefish:conf_get("auth.mongo.auth_query.collection", Conf) of
     undefined -> cuttlefish:unset();
     Collection ->
       PasswordField = cuttlefish:conf_get("auth.mongo.auth_query.password_field", Conf),
