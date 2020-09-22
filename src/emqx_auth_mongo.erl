@@ -121,9 +121,10 @@ query(Pool, Collection, Selector) ->
     ecpool:with_client(Pool, fun(Conn) -> mongo_api:find_one(Conn, Collection, Selector, #{}) end).
 
 query_multi(Pool, Collection, SelectorList) ->
-    lists:foldr(fun(Selector, Acc) ->
-        case query(Pool, Collection, Selector) of
-            undefined -> Acc;
-            Result -> [Result|Acc]
-        end
-    end, [], SelectorList).
+    lists:reverse(lists:flatten(lists:foldl(fun(Selector, Acc1) ->
+        Batch = ecpool:with_client(Pool, fun(Conn) ->
+                  {ok, Cursor} = mongo_api:find(Conn, Collection, Selector, #{}),
+                  mc_cursor:foldl(fun(O, Acc2) -> [O|Acc2] end, [], Cursor, 1000)
+                end),
+        [Batch|Acc1]
+    end, [], SelectorList))).
