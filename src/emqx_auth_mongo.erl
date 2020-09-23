@@ -123,8 +123,11 @@ query(Pool, Collection, Selector) ->
 query_multi(Pool, Collection, SelectorList) ->
     lists:reverse(lists:flatten(lists:foldl(fun(Selector, Acc1) ->
         Batch = ecpool:with_client(Pool, fun(Conn) ->
-                  {ok, Cursor} = mongo_api:find(Conn, Collection, Selector, #{}),
-                  mc_cursor:foldl(fun(O, Acc2) -> [O|Acc2] end, [], Cursor, 1000)
+                  case mongo_api:find(Conn, Collection, Selector, #{}) of
+                      [] -> [];
+                      {ok, Cursor} ->
+                          mc_cursor:foldl(fun(O, Acc2) -> [O|Acc2] end, [], Cursor, 1000)
+                  end
                 end),
         [Batch|Acc1]
     end, [], SelectorList))).
