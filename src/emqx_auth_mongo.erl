@@ -40,9 +40,10 @@ register_metrics() ->
     lists:foreach(fun emqx_metrics:ensure/1, ?AUTH_METRICS).
 
 check(ClientInfo = #{password := Password}, AuthResult,
-      #{authquery := AuthQuery, superquery := SuperQuery, pool := Pool}) ->
+      Env = #{authquery := AuthQuery, superquery := SuperQuery}) ->
     #authquery{collection = Collection, field = Fields,
                hash = HashType, selector = Selector} = AuthQuery,
+    Pool = maps:get(pool, Env, ?APP),
     case query(Pool, Collection, maps:from_list(replvars(Selector, ClientInfo))) of
         undefined -> emqx_metrics:inc(?AUTH_METRICS(ignore));
         {error, Reason} ->
