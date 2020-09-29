@@ -32,8 +32,9 @@ register_metrics() ->
 check_acl(#{username := <<$$, _/binary>>}, _PubSub, _Topic, _AclResult, _State) ->
     ok;
 
-check_acl(ClientInfo, PubSub, Topic, _AclResult, #{aclquery := AclQuery , pool := Pool}) ->
+check_acl(ClientInfo, PubSub, Topic, _AclResult, Env = #{aclquery := AclQuery}) ->
     #aclquery{collection = Coll, selector = SelectorList} = AclQuery,
+    Pool = maps:get(pool, Env, ?APP),
     SelectorMapList =
         lists:map(fun(Selector) ->
             maps:from_list(emqx_auth_mongo:replvars(Selector, ClientInfo))
