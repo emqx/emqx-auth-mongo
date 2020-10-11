@@ -31,8 +31,8 @@
 -export([ replvar/2
         , replvars/2
         , connect/1
-        , query/2
-        , query_multi/2
+        , query/3
+        , query_multi/3
         ]).
 
 -spec(register_metrics() -> ok).
@@ -40,10 +40,10 @@ register_metrics() ->
     lists:foreach(fun emqx_metrics:ensure/1, ?AUTH_METRICS).
 
 check(ClientInfo = #{password := Password}, AuthResult,
-      #{authquery := AuthQuery, superquery := SuperQuery}) ->
+      #{authquery := AuthQuery, superquery := SuperQuery, pool := Pool}) ->
     #authquery{collection = Collection, field = Fields,
                hash = HashType, selector = Selector} = AuthQuery,
-    case query(Collection, maps:from_list(replvars(Selector, ClientInfo))) of
+    case query(Pool, Collection, maps:from_list(replvars(Selector, ClientInfo))) of
         undefined -> emqx_metrics:inc(?AUTH_METRICS(ignore));
         {error, Reason} ->
             ?LOG(error, "[MongoDB] Can't connect to MongoDB server: ~0p", [Reason]),
@@ -60,7 +60,7 @@ check(ClientInfo = #{password := Password}, AuthResult,
             case Result of
                 ok ->
                     ok = emqx_metrics:inc(?AUTH_METRICS(success)),
-                    {stop, AuthResult#{is_superuser => is_superuser(SuperQuery, ClientInfo),
+                    {stop, AuthResult#{is_superuser => is_superuser(Pool, SuperQuery, ClientInfo),
                                        anonymous => false,
                                        auth_result => success}};
                 {error, Error} ->
@@ -82,11 +82,11 @@ description() -> "Authentication with MongoDB".
 %% Is Superuser?
 %%--------------------------------------------------------------------
 
--spec(is_superuser(maybe(#superquery{}), emqx_types:clientinfo()) -> boolean()).
-is_superuser(undefined, _ClientInfo) ->
+-spec(is_superuser(string(), maybe(#superquery{}), emqx_types:clientinfo()) -> boolean()).
+is_superuser(_Pool, undefined, _ClientInfo) ->
     false;
-is_superuser(#superquery{collection = Coll, field = Field, selector = Selector}, ClientInfo) ->
-    Row = query(Coll, maps:from_list(replvars(Selector, ClientInfo))),
+is_superuser(Pool, #superquery{collection = Coll, field = Field, selector = Selector}, ClientInfo) ->
+    Row = query(Pool, Coll, maps:from_list(replvars(Selector, ClientInfo))),
     case maps:get(Field, Row, false) of
         true   -> true;
         _False -> false
@@ -117,13 +117,17 @@ connect(Opts) ->
     WorkerOptions = proplists:get_value(worker_options, Opts, []),
     mongo_api:connect(Type, Hosts, Options, WorkerOptions).
 
-query(Collection, Selector) ->
-    ecpool:with_client(?APP, fun(Conn) -> mongo_api:find_one(Conn, Collection, Selector, #{}) end).
+query(Pool, Collection, Selector) ->
+    ecpool:with_client(Pool, fun(Conn) -> mongo_api:find_one(Conn, Collection, Selector, #{}) end).
 
-query_multi(Collection, SelectorList) ->
-    lists:foldr(fun(Selector, Acc) ->
-        case query(Collection, Selector) of
-            undefined -> Acc;
-            Result -> [Result|Acc]
-        end
-    end, [], SelectorList).
+query_multi(Pool, Collection, SelectorList) ->
+    lists:reverse(lists:flatten(lists:foldl(fun(Selector, Acc1) ->
+        Batch = ecpool:with_client(Pool, fun(Conn) ->
+                  case mongo_api:find(Conn, Collection, Selector, #{}) of
+                      [] -> [];
+                      {ok, Cursor} ->
+                          mc_cursor:foldl(fun(O, Acc2) -> [O|Acc2] end, [], Cursor, 1000)
+                  end
+                end),
+        [Batch|Acc1]
+    end, [], SelectorList))).
