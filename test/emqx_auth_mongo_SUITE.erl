@@ -51,7 +51,6 @@ all() ->
 
 init_per_suite(Cfg) ->
     emqx_ct_helpers:start_apps([emqx_auth_mongo], fun set_special_confs/1),
-    emqx_modules:load_module(emqx_mod_acl_internal, false),
     init_mongo_data(),
     Cfg.
 
