@@ -1,6 +1,10 @@
 %%-*-: erlang -*-
-{"4.2.3",
+{VSN,
    [
+     {<<".*">>, []},
+     {"4.2.3", [
+       {load_module, emqx_auth_mongo, brutal_purge, soft_purge, []}
+     ]},
      {"4.2.2", [
        {load_module, emqx_auth_mongo_app, brutal_purge, soft_purge, []},
        {load_module, emqx_auth_mongo, brutal_purge, soft_purge, []},
@@ -18,6 +22,10 @@
      ]}
    ],
    [
+     {<<".*">>, []},
+     {"4.2.3", [
+       {load_module, emqx_auth_mongo, brutal_purge, soft_purge, []}
+     ]},
      {"4.2.2", [
        {load_module, emqx_auth_mongo_app, brutal_purge, soft_purge, []},
        {load_module, emqx_auth_mongo, brutal_purge, soft_purge, []},
